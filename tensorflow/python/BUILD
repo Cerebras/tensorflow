@@ -4088,6 +4088,7 @@ tf_py_wrap_cc(
         "util/tfprof.i",
         "util/transform_graph.i",
         "util/util.i",
+        "util/tf_graph_to_xla_lib.i",
     ],
     # add win_def_file
     win_def_file = select({
@@ -4132,6 +4133,9 @@ tf_py_wrap_cc(
         "//tensorflow/core/distributed_runtime:server_lib",
         "//tensorflow/core/profiler/internal:print_model_analysis",
         "//tensorflow/tools/graph_transforms:transform_graph_lib",
+        "//tensorflow/tools/xla_extract:tf_graph_to_xla_lib",
+        "//tensorflow/core:core_cpu",
+        "//tensorflow/compiler/jit:xla_cpu_device",
         "//tensorflow/python/eager:pywrap_tfe_lib",
     ] + (tf_additional_lib_deps() +
          tf_additional_plugin_deps() +
