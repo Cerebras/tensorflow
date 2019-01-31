@@ -3,6 +3,7 @@
 #include <iterator>
 #include <string>
 #include <tuple>
+#include <algorithm>
 #include "tensorflow/compiler/tf2xla/xla_compiler.h"
 #include "tensorflow/compiler/tf2xla/xla_op_registry.h"  // for DEVICE_CPU_XLA_JIT
 #include "tensorflow/compiler/xla/client/client_library.h"
@@ -38,23 +39,22 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
       // iterate over the inputs to this node for the args
       for (const Node* in : node->in_nodes()) {
         auto in_def = in->def();
-	      XlaCompiler::Argument arg;
-	      if (in_def.op() == "VarHandleOp") {
-	        arg.kind = XlaCompiler::Argument::kResource;
-	        arg.resource_kind = XlaResource::kVariable;
-	        arg.initialized = true;
-	        GetNodeAttr(in_def, "shape", &(arg.shape));
-	      }
-        else {
-	        arg.kind = XlaCompiler::Argument::kParameter;
+        XlaCompiler::Argument arg;
+        if (in_def.op() == "VarHandleOp") {
+          arg.kind = XlaCompiler::Argument::kResource;
+          arg.resource_kind = XlaResource::kVariable;
+          arg.initialized = true;
+          GetNodeAttr(in_def, "shape", &(arg.shape));
+        } else {
+          arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
           GetNodeAttr(in_def, "_output_shapes", &shape_value);
           arg.shape = shape_value[0];
-	      }
+        }
         arg.name = in_def.name();
 
         GetNodeAttr(in_def, "dtype", &(arg.type));
-        if(arg.type==DT_INVALID){
+        if (arg.type == DT_INVALID) {
           arg.type = DT_FLOAT;
         }
         xla_args.push_back(std::move(arg));
@@ -95,77 +95,50 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   std::unique_ptr<GraphExecutionState> execution_state;
   s = GraphExecutionState::MakeForBaseGraph(&gdef, ges_options,
                                             &execution_state);
-  if (!s.ok()) LOG(FATAL) << "execution state creation failed: " << s.error_message();
+  if (!s.ok())
+    LOG(FATAL) << "execution state creation failed: " << s.error_message();
   BuildGraphOptions bg_options;
   bg_options.use_function_convention = true;
   std::istringstream fetch_stream(fetch);
-  std::vector<std::string> fetches(std::istream_iterator<std::string>{fetch_stream},
-                                   std::istream_iterator<std::string>());
-  for (std::string fetch0: fetches){
+  std::vector<std::string> fetches(
+      std::istream_iterator<std::string>{fetch_stream},
+      std::istream_iterator<std::string>());
+  for (std::string fetch0 : fetches) {
     bg_options.callable_options.add_fetch(fetch0);
   }
   std::unique_ptr<ClientGraph> client_graph;
   s = execution_state->BuildGraph(bg_options, &client_graph);
   if (!s.ok()) LOG(FATAL) << "build graph failed " << s.error_message();
-  int n=client_graph->flib_def->ToProto().function_size(); // usually one but for lstm its 6
-  int pos=0;
-  if(n>1){
-    for(int i=0;i<n;i++){
-      auto fdef = client_graph->flib_def->ToProto().function(i);
-      std::string name=fdef.signature().name();
-      if(name.find("cluster_")!=std::string::npos){
-        pos=i;
-      }
-    }
-  }
-  // for(int i=0;i<n;i++){
-  //   auto fdef = client_graph->flib_def->ToProto().function(i);
-  //   std::cout<<fdef.signature().name()<<"\n";
-  // }
-  auto fdef = client_graph->flib_def->ToProto().function(pos);
+
+  // Usually there is only one cluster, but for some graphs (e.g. LSTM) there
+  // may be more.  Return the *last* cluster whose name starts with "cluster_"
+  FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
+
+  auto fdef_iter = std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+				[] (const FunctionDef& f_) -> bool {
+				  return (f_.signature().name().find("cluster_") == 0);
+				});
+  const FunctionDef& fdef = *fdef_iter;
+
+  // Need to rearrange these xla_args to match graph.
+  // features and labels should be the first nodes but sometimes aren't
+  // If args are [a, b, c, d, e, ...] and a is the features arg, then leave
+  // as is.  if d is the features arg, then reorder as [d, e, ..., a, b, c]
+  // This corresponds to a rotation with `d` as the axis.
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
-  // rearranging  xla_args to match with graph -> features and labels should be the first nodes
-  // sometimes its not,  but the alternative generated is also always the same one.
-  // If the vector is supposed to be {1,2,3,4,5,6}, it is instead  {4,5,6,1,2,3}
-  // so fixing this below
-  // int counter = 1;
-  // bool right_order = false;
-  // while(!right_order){
-  //   if(xla_args.at(0).kind==XlaCompiler::Argument::kParameter && xla_args.at(0).resource_kind==0 && xla_args.at(0).initialized==false){
-  //     right_order = true;
-  //   }
-  //   else{
-  //     s = execution_state->BuildGraph(bg_options, &client_graph);
-  //     if (!s.ok()) LOG(FATAL) << "build graph failed " << s.error_message();
-  //     fdef = client_graph->flib_def->ToProto().function(0);
-  //     xla_args = BuildXlaArgsFromClientGraph(client_graph);
-  //     counter += 1;
-  //   }
-  //   if(counter==20){
-  //     break;
-  //   }
-  // }
-  // std::cout<<"counter: "<<counter<<"\n";
-  if(xla_args.at(0).kind==XlaCompiler::Argument::kParameter && xla_args.at(0).resource_kind==0 && xla_args.at(0).initialized==false){
-  }
-  else{
-    std::cout<<"default fail\n";
-    std::vector<XlaCompiler::Argument> xla_args_temp;
-    int pos = 0;
-    for(std::size_t i = 0; i < (std::size_t)xla_args.size(); i++){
-      if(xla_args.at(i).kind==XlaCompiler::Argument::kParameter && xla_args.at(i).resource_kind==0 && xla_args.at(i).initialized==false){
-        pos =i;
-        break;
-      }
-      xla_args_temp.push_back(std::move(xla_args.at(i)));
-    }
-    std::vector<XlaCompiler::Argument> xla_args_f(xla_args.begin()+pos,xla_args.end());
-    std::move(xla_args_temp.begin(), xla_args_temp.end(), std::back_inserter(xla_args_f));
-    xla_args = xla_args_f;
-  }
+  // Find the features arg (first parameter tensor)
+  auto features_iter = std::find_if(
+      xla_args.begin(), xla_args.end(),
+      [](const XlaCompiler::Argument& xarg) -> bool {
+        return (xarg.kind == XlaCompiler::Argument::kParameter &&
+                xarg.resource_kind == 0 && xarg.initialized == false);
+      });
 
- LOG(INFO) << "xla args in correct order\n";
+  // Rotate around it
+  std::rotate(xla_args.begin(), features_iter, xla_args.end());
+
+  LOG(INFO) << "xla args in correct order\n";
   xla::HloModuleProto hmod;
   {
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
@@ -181,11 +154,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     XlaCompiler compiler(compile_options);
     XlaCompiler::CompilationResult result;
 
-    //debugging
-    // for(int i=0;i<xla_args.size();i++){
-    //   std::cout<<xla_args.at(i).kind<<" : "<<xla_args.at(i).resource_kind<<" : "<<xla_args.at(i).initialized<<" : "<<xla_args.at(i).shape<<" : "<<xla_args.at(i).name<<" : "<<xla_args.at(i).type<<"\n";
-    // }
-    // end debugging
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
     if (!s.ok()) LOG(FATAL) << "Couldn't compile to xla: " << s.error_message();
@@ -194,24 +162,25 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     hmod.CopyFrom(result.computation->proto());
 
     // hlo optimizations
-
-    // getting hlo_module from proto
-    xla::StatusOr<xla::ProgramShape> program_shape_status = result.computation->GetProgramShape();
+    xla::StatusOr<xla::ProgramShape> program_shape_status =
+        result.computation->GetProgramShape();
     xla::ProgramShape program_shape = program_shape_status.ValueOrDie();
     xla::HloModuleConfig module_config = xla::HloModuleConfig(program_shape);
 
-    xla::StatusOr<std::unique_ptr<xla::HloModule>> hlo_module_status = xla::HloModule::CreateFromProto(hmod, module_config);
-    std::unique_ptr<xla::HloModule> hlo_module = std::move(hlo_module_status.ValueOrDie());
-    std::cout<<hlo_module->name()<<"\n"; // can be removed in the future once build is stable
+    xla::StatusOr<std::unique_ptr<xla::HloModule>> hlo_module_status =
+        xla::HloModule::CreateFromProto(hmod, module_config);
+    std::unique_ptr<xla::HloModule> hlo_module =
+        std::move(hlo_module_status.ValueOrDie());
 
     xla::HloPassPipeline pipeline("Interpreter");
+
     // adding passes we wish to run
     pipeline.AddPass<xla::CallInliner>();
     pipeline.AddPass<xla::HloSubcomputationUnification>();
     pipeline.AddPass<xla::HloCSE>(false);
 
     xla::AlgebraicSimplifierOptions options(
-         [](const xla::Shape&, const xla::Shape&) { return false; });
+        [](const xla::Shape&, const xla::Shape&) { return false; });
     options.set_enable_dot_strength_reduction(false);
     options.set_enable_conv_simplification(false);
     pipeline.AddPass<xla::AlgebraicSimplifier>(options);
@@ -220,55 +189,53 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     pipeline.AddPass<xla::HloConstantFolding>();
     pipeline.AddPass<xla::HloCSE>(true);
     pipeline.AddPass<xla::LayoutAssignment>(
-      hlo_module.get()->mutable_entry_computation_layout(),
-      xla::LayoutAssignment::InstructionCanChangeLayout);
+        hlo_module.get()->mutable_entry_computation_layout(),
+        xla::LayoutAssignment::InstructionCanChangeLayout);
     pipeline.AddPass<xla::HloDCE>();
     pipeline.AddPass<xla::FlattenCallGraph>();
 
     // hlo optimization run
     s = pipeline.Run(hlo_module.get()).status();
 
-    if (!s.ok()) LOG(FATAL) << "Couldn't Run HloOptimization: " << s.error_message();
+    if (!s.ok())
+      LOG(FATAL) << "Couldn't Run HloOptimization: " << s.error_message();
 
     LOG(INFO) << "Done HLO Optimization\n";
     hmod = hlo_module.get()->ToProto();
 
-    // restoring names
-    std::size_t entry_ind = 0;
-    bool found = false;
-    for (std::size_t i = 0; i < (std::size_t)hmod.computations_size(); i++) {
-      const xla::HloComputationProto& comp = hmod.computations(i);
-      if (comp.id() == hmod.entry_computation_id()) {
-        entry_ind = i;
-        found = true;
-        break;
-      }
+    auto* comps = hmod.mutable_computations();
+
+    auto entry_comp_iter =
+        std::find_if(comps->begin(), comps->end(),
+                     [&hmod](const xla::HloComputationProto& c_) -> bool {
+                       return c_.id() == hmod.entry_computation_id();
+                     });
+
+    if (entry_comp_iter == comps->end()) {
+      throw std::runtime_error(
+          "Could not find entry computation in HLO module.");
     }
+    xla::HloComputationProto& entry_comp = *entry_comp_iter;
 
-    if (!found) {
-      throw std::runtime_error("Could not find entry computation in HLO module.");
-    }
-
-    xla::HloComputationProto* entry_comp = hmod.mutable_computations(entry_ind);
-
-    for (std::size_t i = 0; i < (std::size_t)entry_comp->instructions_size(); i++) {
-      xla::HloInstructionProto* instr = entry_comp->mutable_instructions(i);
-      if (instr->opcode() != "parameter") {
-        continue;
-      }
-      instr->set_name(xla_args.at(instr->parameter_number()).name);
-
-    }
+    std::for_each(entry_comp.mutable_instructions()->begin(),
+		  entry_comp.mutable_instructions()->end(),
+      [&xla_args] (xla::HloInstructionProto& instr) {
+        if (instr.opcode() == "parameter") {
+          instr.set_name(xla_args[instr.parameter_number()].name);
+        }
+      });
   }
+
   if (device_mgr != nullptr) {
     delete(device_mgr);
   }
+
   return std::move(hmod);
 }
 
 Status xla_extract_via_strings(const std::string& graph_def_msg,
-			       const std::string& target_node,
-			       std::string* out_graph) {
+             const std::string& target_node,
+             std::string* out_graph) {
   GraphDef gdef;
   gdef.ParseFromString(graph_def_msg);
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);

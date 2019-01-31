@@ -73,7 +73,6 @@ def generic_compile(model_fn, inputs):
         tf.placeholder(i.dtype, shape=i.shape, name=i.op.name) for i in inputs]
     return compile(model_fn, inputs=placeholder_inputs)
 
-#with tf.device("/job:localhost/replica:0/task:0/device:XLA_CPU:0"):
 (loss,) = generic_compile(model_fn, inputs=[x, y])
 
 from tensorflow.tools.xla_extract import XlaExtract

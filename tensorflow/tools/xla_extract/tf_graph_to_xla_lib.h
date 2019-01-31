@@ -25,8 +25,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch);
 
 Status xla_extract_via_strings(const string& graph_def_msg,
-			     const string& target_node,
-			     string* out_graph);
+                               const string& target_node, string* out_graph);
 }  // namespace tensorflow
 
 #endif
