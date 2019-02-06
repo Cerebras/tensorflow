@@ -116,9 +116,26 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   auto fdef_iter = std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
 				[] (const FunctionDef& f_) -> bool {
+				  return (f_.signature().name().find("cluster_") == 0 &&
+                  f_.signature().name().substr(f_.signature().name().length() - 2)=="_0");
+				});
+
+  FunctionDef fdef;
+
+  if(fdef_iter == fdef_lib.function().rend()){
+    fdef_iter = std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+				[] (const FunctionDef& f_) -> bool {
 				  return (f_.signature().name().find("cluster_") == 0);
 				});
-  const FunctionDef& fdef = *fdef_iter;
+  }
+
+  if(fdef_iter != fdef_lib.function().rend()){
+    fdef = *fdef_iter;
+  }
+  else{
+    fdef = *fdef_lib.function().begin();
+    LOG(INFO) << "cluster not found, using "<<fdef.signature().name()<<" instead\n";
+  }
 
   // Need to rearrange these xla_args to match graph.
   // features and labels should be the first nodes but sometimes aren't
