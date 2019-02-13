@@ -629,7 +629,8 @@ class _ModelFnWrapper(object):
       # control dependency of other tensor outputs, it doesn't do so for
       # tensor-typed train_op. Thus, we need to set it explicitly here.
       with ops.control_dependencies([estimator_spec.train_op]):
-        return array_ops.identity(estimator_spec.loss, name=estimator_spec.loss.op.name))
+        return array_ops.identity(estimator_spec.loss,
+                                  name=estimator_spec.loss.op.name)
 
     return train_step, captured_scaffold_fn
 
