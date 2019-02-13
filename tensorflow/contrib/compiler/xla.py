@@ -220,7 +220,7 @@ class XLACompileContext(control_flow_ops.XLAControlFlowContext):
       with ops.control_dependencies(None):
         self.Enter()
         external_control_inputs = [
-            array_ops.identity(x.outputs[0]).op
+            array_ops.identity(x.outputs[0], name=x.outputs[0].op.name).op
             for x in external_control_inputs
             if x.outputs
         ]
@@ -464,7 +464,7 @@ def _postprocess_flat_outputs(outputs):
   new_output_tensors = []
   for t in output_tensors:
     with ops.device(t.device if t.device else ''):
-      new_output_tensors.append(array_ops.identity(t))
+      new_output_tensors.append(array_ops.identity(t, name=t.op.name))
 
   return new_output_tensors, output_operations
 
@@ -499,7 +499,7 @@ def _postprocess_non_flat_outputs(outputs):
     # Makes sure even pass-through inputs/outputs are touched in compile
     # context by creating an Identity node inside compile context.
     with ops.device(o.device if o.device else ''):
-      new_output_tensors.append(array_ops.identity(o))
+      new_output_tensors.append(array_ops.identity(o, name=o.op.name))
 
   return new_output_tensors, []
 
@@ -584,7 +584,7 @@ class _ModelFnWrapper(object):
       return model_fn_lib.EstimatorSpec(
           mode=mode,
           loss=loss,
-          train_op=array_ops.identity(loss),
+          train_op=array_ops.identity(loss, name=loss.op.name),
           scaffold=_get_scaffold(captured_scaffold_fn))
     elif mode == model_fn_lib.ModeKeys.EVAL:
       eval_step, captured_eval_metric_fn, captured_scaffold_fn = (
@@ -629,7 +629,7 @@ class _ModelFnWrapper(object):
       # control dependency of other tensor outputs, it doesn't do so for
       # tensor-typed train_op. Thus, we need to set it explicitly here.
       with ops.control_dependencies([estimator_spec.train_op]):
-        return array_ops.identity(estimator_spec.loss)
+        return array_ops.identity(estimator_spec.loss, name=estimator_spec.loss.op.name))
 
     return train_step, captured_scaffold_fn
 
