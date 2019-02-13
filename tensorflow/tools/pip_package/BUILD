@@ -94,6 +94,7 @@ COMMON_PIP_DEPS = [
     "//tensorflow/python:test_ops",
     "//tensorflow/python:while_v2",
     "//tensorflow/tools/dist_test/server:grpc_tensorflow_server",
+    "//tensorflow/tools/xla_extract",
 ]
 
 COMMON_PIP_DEPS_V1 = COMMON_PIP_DEPS + [
