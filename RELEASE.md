@@ -3,7 +3,8 @@
 ## Major Features and Improvements
 
 * TensorFlow Lite has moved from contrib to core. This means that Python modules are under `tf.lite` and source code is now under `tensorflow/lite` rather than `tensorflow/contrib/lite`.
-* TensorFlow GPU binaries are now built against CUDA 10.
+* TensorFlow GPU binaries are now built against CUDA 10 and TensorRT 5.0.
+* Support for Python3.7 on all operating systems.
 * Moved NCCL to core.
 
 ## Behavioral changes
@@ -82,6 +83,7 @@
   * Deprecate `tf.data.Dataset.make_initializable_iterator()` in V1, removed it from V2, and added `tf.compat.v1.data.make_initializable_iterator()`.
   * Enable nested dataset support in core `tf.data` transformations.
   * For `tf.data.Dataset` implementers: Added `tf.data.Dataset._element_structured property` to replace `Dataset.output_{types,shapes,classes}`.
+  * Make `num_parallel_calls` of `tf.data.Dataset.interleave` and `tf.data.Dataset.map` work in Eager mode.
 * Toolchains
   * Fixed OpenSSL compatibility by avoiding `EVP_MD_CTX_destroy`.
   * Added bounds checking to printing deprecation warnings.
