@@ -181,7 +181,7 @@ class XLACompileContext(control_flow_ops.XLAControlFlowContext):
       # Use an identity to pull control inputs as data inputs. Note that we
       # ignore ops which don't have outputs. TODO(phawkins): fix that.
       external_control_inputs = [
-          array_ops.identity(x.outputs[0]).op
+          array_ops.identity(x.outputs[0], name=x.outputs[0].op.name).op
           for x in external_control_inputs
           if x.outputs
       ]
@@ -330,7 +330,7 @@ def _compile_internal(computation, inputs=None):
     new_output_tensors = []
     for t in output_tensors:
       with ops.device(t.device if t.device else ''):
-        new_output_tensors.append(array_ops.identity(t))
+        new_output_tensors.append(array_ops.identity(t,name=t.op.name))
 
     output_tensors = new_output_tensors
     context.ExitResult(output_tensors)
@@ -339,7 +339,8 @@ def _compile_internal(computation, inputs=None):
     context.Exit()
 
   outputs = [
-      xla_ops.xla_cluster_output(output_tensors[i], name='output{}'.format(i))
+      xla_ops.xla_cluster_output(output_tensors[i],
+        name=output_tensors[i].op.name)
       for i in xrange(output_arity)
   ]
 
@@ -354,7 +355,7 @@ def _compile_internal(computation, inputs=None):
       # Wraps the outputs in identity operators that carries control
       # dependencies.
       return [
-          array_ops.identity(outputs[i], name='output_%d' % i)
+          array_ops.identity(outputs[i], name=output_tensors[i].op.name)
           for i in xrange(output_arity)
       ]
 
@@ -439,7 +440,7 @@ class _ModelFnWrapper(object):
       return model_fn_lib.EstimatorSpec(
           mode=mode,
           loss=loss,
-          train_op=array_ops.identity(loss),
+          train_op=array_ops.identity(loss, loss.op.name),
           scaffold=_get_scaffold(captured_scaffold_fn))
     elif mode == model_fn_lib.ModeKeys.EVAL:
       eval_step, captured_eval_metric_fn, captured_scaffold_fn = (
@@ -484,7 +485,8 @@ class _ModelFnWrapper(object):
       # control dependency of other tensor outputs, it doesn't do so for
       # tensor-typed train_op. Thus, we need to set it explicitly here.
       with ops.control_dependencies([estimator_spec.train_op]):
-        return array_ops.identity(estimator_spec.loss)
+        return array_ops.identity(estimator_spec.loss,
+            name=estimator_spec.loss.op.name)
 
     return train_step, captured_scaffold_fn
 
