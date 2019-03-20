@@ -1,40 +1,42 @@
+#include "tensorflow/tools/xla_extract/tf_graph_to_xla_lib.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <algorithm>
 #include <iterator>
 #include <string>
 #include <tuple>
-#include <algorithm>
 #include "tensorflow/compiler/tf2xla/xla_compiler.h"
 #include "tensorflow/compiler/tf2xla/xla_op_registry.h"  // for DEVICE_CPU_XLA_JIT
 #include "tensorflow/compiler/xla/client/client_library.h"
 #include "tensorflow/core/common_runtime/graph_execution_state.h"
 #include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/logging.h"
-#include "tensorflow/tools/xla_extract/tf_graph_to_xla_lib.h"
 
 #include "tensorflow/compiler/xla/service/hlo_module_config.h"
-#include "tensorflow/compiler/xla/service/hlo_proto_util.h"
 #include "tensorflow/compiler/xla/service/hlo_pass_pipeline.h"
+#include "tensorflow/compiler/xla/service/hlo_proto_util.h"
 #include "tensorflow/compiler/xla/service/interpreter/compiler.h"
 
-#include "tensorflow/compiler/xla/service/layout_assignment.h"
+#include <utility>
+#include "tensorflow/compiler/xla/service/algebraic_simplifier.h"
+#include "tensorflow/compiler/xla/service/call_inliner.h"
 #include "tensorflow/compiler/xla/service/despecializer.h"
 #include "tensorflow/compiler/xla/service/flatten_call_graph.h"
 #include "tensorflow/compiler/xla/service/hlo_constant_folding.h"
 #include "tensorflow/compiler/xla/service/hlo_cse.h"
 #include "tensorflow/compiler/xla/service/hlo_dce.h"
+#include "tensorflow/compiler/xla/service/hlo_subcomputation_unification.h"
+#include "tensorflow/compiler/xla/service/layout_assignment.h"
 #include "tensorflow/compiler/xla/service/reshape_mover.h"
 #include "tensorflow/compiler/xla/service/while_loop_simplifier.h"
-#include "tensorflow/compiler/xla/service/hlo_subcomputation_unification.h"
-#include "tensorflow/compiler/xla/service/call_inliner.h"
-#include "tensorflow/compiler/xla/service/algebraic_simplifier.h"
-#include <utility>
+
+#include "tensorflow/core/lib/strings/str_util.h"
 namespace tensorflow {
 
 std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
     const std::unique_ptr<ClientGraph>& cg) {
   std::vector<XlaCompiler::Argument> xla_args;
-  for (const Node* node: cg->graph.nodes()) {
+  for (const Node* node : cg->graph.nodes()) {
     if (node->type_string() == "XlaLaunch") {
       // iterate over the inputs to this node for the args
       for (const Node* in : node->in_nodes()) {
@@ -66,7 +68,8 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
 void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
                        DeviceSet* dev_set) {
   std::vector<std::unique_ptr<Device>> devices;
-  Status s = DeviceFactory::AddDevices(options, "/job:localhost/replica:0/task:0", &devices);
+  Status s = DeviceFactory::AddDevices(
+      options, "/job:localhost/replica:0/task:0", &devices);
   *device_mgr = new DeviceMgr(std::move(devices));
   int devices_added = 0;
   for (auto d : (*device_mgr)->ListDevices()) {
@@ -114,59 +117,66 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
   FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
-  auto fdef_iter = std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
-				[] (const FunctionDef& f_) -> bool {
-				  return (f_.signature().name().find("cluster_") == 0 &&
-                  f_.signature().name().substr(f_.signature().name().length() - 2)=="_0");
-				});
+  auto fdef_iter =
+      std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+                   [](const FunctionDef& f_) -> bool {
+                     return (f_.signature().name().find("cluster_") == 0 &&
+                             f_.signature().name().substr(
+                                 f_.signature().name().length() - 2) == "_0");
+                   });
 
   FunctionDef fdef;
 
-  if(fdef_iter == fdef_lib.function().rend()){
-    fdef_iter = std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
-				[] (const FunctionDef& f_) -> bool {
-				  return (f_.signature().name().find("cluster_") == 0);
-				});
+  if (fdef_iter == fdef_lib.function().rend()) {
+    fdef_iter =
+        std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+                     [](const FunctionDef& f_) -> bool {
+                       return (f_.signature().name().find("cluster_") == 0);
+                     });
   }
 
-  if(fdef_iter != fdef_lib.function().rend()){
+  if (fdef_iter != fdef_lib.function().rend()) {
     fdef = *fdef_iter;
-  }
-  else{
+  } else {
     fdef = *fdef_lib.function().begin();
-    LOG(INFO) << "cluster not found, using "<<fdef.signature().name()<<" instead\n";
+    LOG(INFO) << "cluster not found, using " << fdef.signature().name()
+              << " instead\n";
   }
 
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
-
   // to make sure xla_args matches fdef
-  std::vector<XlaCompiler::Argument> new_xla_args;
-  auto fdef_ground = fdef.signature().input_arg();
 
-  for(int i = 0;i<xla_args.size();i++){
-    std::string xla_arg_name=xla_args[i].name;
-    std::replace(xla_arg_name.begin(),xla_arg_name.end(), '/','_');
-    std::replace(xla_arg_name.begin(),xla_arg_name.end(), '.','_');
-    xla_arg_name=xla_arg_name+"_0_arg";
-    std::transform(xla_arg_name.begin(), xla_arg_name.end(), xla_arg_name.begin(), ::tolower);
+  LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
+  LOG(INFO) << fdef.signature().name() << "\n";
+  LOG(INFO) << "xla args number:" << xla_args.size() << "\n";
+  LOG(INFO) << "fdef_args number:" << fdef.signature().input_arg().size()
+            << "\n";
 
-    std:string readvar="readvariableop";
-    std::string read_idt="identity";
-    std::size_t pos = xla_arg_name.find(readvar);
+  auto fdef_ground_truth = fdef.signature().input_arg();
+  std::vector<XlaCompiler::Argument> new_xla_args(fdef_ground_truth.size());
 
-    if(pos!= std::string::npos){
-      xla_arg_name.replace(pos,readvar.length(),read_idt);
+  const std::string kReadVarOpString = "readvariableop";
+  const std::string rep_ReadVarOpString = "identity";
+  for (int i = 0; i < xla_args.size(); i++) {
+    std::string xla_arg_name = xla_args[i].name;
+    xla_arg_name = str_util::ArgDefCase(xla_arg_name);
+    xla_arg_name = xla_arg_name + "_0_arg";
+    xla_arg_name = str_util::Lowercase(xla_arg_name);
+
+    std::size_t pos = xla_arg_name.find(kReadVarOpString);
+
+    if (pos != std::string::npos) {
+      xla_arg_name.replace(pos, kReadVarOpString.length(), rep_ReadVarOpString);
     }
-
-    for(int j=0; j<fdef_ground.size();j++){
-        if(xla_arg_name==fdef_ground[j].name()){
-          new_xla_args.push_back(xla_args[i]);
-        }
+    for (int j = 0; j < fdef_ground_truth.size(); j++) {
+      if (xla_arg_name == fdef_ground_truth[j].name()) {
+        new_xla_args[j] = xla_args[i];
+      }
     }
-
   }
-  xla_args=new_xla_args;
+
+  xla_args = new_xla_args;
   // we no longer need to do the rotation
 
   LOG(INFO) << "xla args in correct order and matches fdef\n";
@@ -249,24 +259,24 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     xla::HloComputationProto& entry_comp = *entry_comp_iter;
 
     std::for_each(entry_comp.mutable_instructions()->begin(),
-		  entry_comp.mutable_instructions()->end(),
-      [&xla_args] (xla::HloInstructionProto& instr) {
-        if (instr.opcode() == "parameter") {
-          instr.set_name(xla_args[instr.parameter_number()].name);
-        }
-      });
+                  entry_comp.mutable_instructions()->end(),
+                  [&xla_args](xla::HloInstructionProto& instr) {
+                    if (instr.opcode() == "parameter") {
+                      instr.set_name(xla_args[instr.parameter_number()].name);
+                    }
+                  });
   }
 
   if (device_mgr != nullptr) {
-    delete(device_mgr);
+    delete (device_mgr);
   }
 
   return std::move(hmod);
 }
 
 Status xla_extract_via_strings(const std::string& graph_def_msg,
-             const std::string& target_node,
-             std::string* out_graph) {
+                               const std::string& target_node,
+                               std::string* out_graph) {
   GraphDef gdef;
   gdef.ParseFromString(graph_def_msg);
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
