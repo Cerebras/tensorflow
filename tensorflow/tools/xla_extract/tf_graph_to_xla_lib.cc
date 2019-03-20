@@ -175,6 +175,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   }
   xla_args=new_xla_args;
+  // we no longer need to do the rotation
 
   LOG(INFO) << "xla args in correct order and matches fdef\n";
   xla::HloModuleProto hmod;
