@@ -114,6 +114,13 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
   FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
+  // to be removed
+  int n = fdef_lib.function().size();
+  std::cout<<"number of fdef_lib function "<<n<<"\n";
+  for(int i=0;i<n;i++){
+    std::cout<<fdef_lib.function()[i].signature().name()<<" \n";
+  }
+  // end
   auto fdef_iter = std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
 				[] (const FunctionDef& f_) -> bool {
 				  return (f_.signature().name().find("cluster_") == 0 &&
@@ -143,17 +150,84 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // as is.  if d is the features arg, then reorder as [d, e, ..., a, b, c]
   // This corresponds to a rotation with `d` as the axis.
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
+  // to be removed
+  //fdef.signature().mutable_allows_uninitialized_input=true;
+  std::cout<<"fdef input_args count:"<<fdef.signature().input_arg().size()<<"\n";
+  for(int j=0;j<fdef.signature().input_arg().size();j++){
+    std::cout<<fdef.signature().input_arg()[j].name()<<"\n";
+  }
+  std::vector<XlaCompiler::Argument> new_xla_args;
+  auto fdef_ground = fdef.signature().input_arg();
+
+  for(int i = 0;i<xla_args.size();i++){
+    std::string xla_arg_name=xla_args[i].name;
+    std::cout<<xla_arg_name<<"\n";
+    std::replace(xla_arg_name.begin(),xla_arg_name.end(), '/','_');
+    std::replace(xla_arg_name.begin(),xla_arg_name.end(), '.','_');
+    xla_arg_name=xla_arg_name+"_0_arg";
+    std::transform(xla_arg_name.begin(), xla_arg_name.end(), xla_arg_name.begin(), ::tolower);
+    std:string readvar="readvariableop";
+    std::string read_idt="identity";
+    std::size_t pos = xla_arg_name.find(readvar);
+    if(pos!= std::string::npos){
+      xla_arg_name.replace(pos,readvar.length(),read_idt);
+    }
+
+    // if(!isdigit(xla_arg_name.back())){
+    //   xla_arg_name=xla_arg_name+"_0_arg";
+    // }
+    // else{
+    //   xla_arg_name=xla_arg_name+"_arg";
+    // }
+    std::cout<<xla_arg_name<<"\n";
+    for(int j=0; j<fdef_ground.size();j++){
+        if(xla_arg_name==fdef_ground[j].name()){
+          new_xla_args.push_back(xla_args[i]);
+        }
+    }
+
+  }
+  xla_args=new_xla_args;
+  std::cout<<"args count: "<<xla_args.size()<<"\n";
+  // end
 
   // Find the features arg (first parameter tensor)
-  auto features_iter = std::find_if(
-      xla_args.begin(), xla_args.end(),
-      [](const XlaCompiler::Argument& xarg) -> bool {
-        return (xarg.kind == XlaCompiler::Argument::kParameter &&
-                xarg.resource_kind == 0 && xarg.initialized == false);
-      });
+  // auto features_iter = std::find_if(
+  //     xla_args.begin(), xla_args.end(),
+  //     [](const XlaCompiler::Argument& xarg) -> bool {
+  //       return (xarg.kind == XlaCompiler::Argument::kParameter &&
+  //               xarg.resource_kind == 0 && xarg.initialized == false);
+  //     });
 
-  // Rotate around it
-  std::rotate(xla_args.begin(), features_iter, xla_args.end());
+  // // Rotate around it
+  // std::rotate(xla_args.begin(), features_iter, xla_args.end());
+
+
+  // find alternative: to be removed (to capture readvariableop)
+  // compare the args:
+  // for(int i=0; i<xla_args.size(); i++){
+  //   std::cout<<xla_args[i].name<<":type:"<<xla_args[i].type<<":kind:"<<xla_args[i].kind<<":resource_kind:"<<xla_args[i].resource_kind<<":shape:"<<xla_args[i].shape<<":initialized:"<<xla_args[i].initialized<<"\n";
+  // }
+  // for (auto iter = xla_args.begin(); iter != xla_args.end(); ){
+  //   XlaCompiler::Argument xarg=*iter;
+  //   if(xarg.name.find("Placeholder")==std::string::npos && xarg.kind == XlaCompiler::Argument::kParameter &&xarg.resource_kind == 0 && xarg.initialized == false && xarg.name.find("kernel")==std::string::npos && xarg.name.find("bias")==std::string::npos){
+  //                 iter=xla_args.erase(iter);
+  //   }
+  //   else{
+  //     ++iter;
+  //   }
+
+  // }
+
+  // end
+  // to be removed
+    // compare the args:
+    for(int i=0;i<xla_args.size();i++){
+      std::cout<<xla_args[i].name<<":type:"<<xla_args[i].type<<":kind:"<<xla_args[i].kind<<":resource_kind:"<<xla_args[i].resource_kind<<":shape:"<<xla_args[i].shape<<":initialized:"<<xla_args[i].initialized<<"\n";
+    }
+    // end
+  // end
+
 
   LOG(INFO) << "xla args in correct order\n";
   xla::HloModuleProto hmod;
