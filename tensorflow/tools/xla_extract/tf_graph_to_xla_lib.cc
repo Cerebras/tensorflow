@@ -144,42 +144,29 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     LOG(INFO) << "cluster not found, using "<<fdef.signature().name()<<" instead\n";
   }
 
-  // Need to rearrange these xla_args to match graph.
-  // features and labels should be the first nodes but sometimes aren't
-  // If args are [a, b, c, d, e, ...] and a is the features arg, then leave
-  // as is.  if d is the features arg, then reorder as [d, e, ..., a, b, c]
-  // This corresponds to a rotation with `d` as the axis.
+
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
-  // to be removed
-  //fdef.signature().mutable_allows_uninitialized_input=true;
-  std::cout<<"fdef input_args count:"<<fdef.signature().input_arg().size()<<"\n";
-  for(int j=0;j<fdef.signature().input_arg().size();j++){
-    std::cout<<fdef.signature().input_arg()[j].name()<<"\n";
-  }
+
+
+  // to make sure xla_args matches fdef
   std::vector<XlaCompiler::Argument> new_xla_args;
   auto fdef_ground = fdef.signature().input_arg();
 
   for(int i = 0;i<xla_args.size();i++){
     std::string xla_arg_name=xla_args[i].name;
-    std::cout<<xla_arg_name<<"\n";
     std::replace(xla_arg_name.begin(),xla_arg_name.end(), '/','_');
     std::replace(xla_arg_name.begin(),xla_arg_name.end(), '.','_');
     xla_arg_name=xla_arg_name+"_0_arg";
     std::transform(xla_arg_name.begin(), xla_arg_name.end(), xla_arg_name.begin(), ::tolower);
+
     std:string readvar="readvariableop";
     std::string read_idt="identity";
     std::size_t pos = xla_arg_name.find(readvar);
+
     if(pos!= std::string::npos){
       xla_arg_name.replace(pos,readvar.length(),read_idt);
     }
 
-    // if(!isdigit(xla_arg_name.back())){
-    //   xla_arg_name=xla_arg_name+"_0_arg";
-    // }
-    // else{
-    //   xla_arg_name=xla_arg_name+"_arg";
-    // }
-    std::cout<<xla_arg_name<<"\n";
     for(int j=0; j<fdef_ground.size();j++){
         if(xla_arg_name==fdef_ground[j].name()){
           new_xla_args.push_back(xla_args[i]);
@@ -188,48 +175,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   }
   xla_args=new_xla_args;
-  std::cout<<"args count: "<<xla_args.size()<<"\n";
-  // end
 
-  // Find the features arg (first parameter tensor)
-  // auto features_iter = std::find_if(
-  //     xla_args.begin(), xla_args.end(),
-  //     [](const XlaCompiler::Argument& xarg) -> bool {
-  //       return (xarg.kind == XlaCompiler::Argument::kParameter &&
-  //               xarg.resource_kind == 0 && xarg.initialized == false);
-  //     });
-
-  // // Rotate around it
-  // std::rotate(xla_args.begin(), features_iter, xla_args.end());
-
-
-  // find alternative: to be removed (to capture readvariableop)
-  // compare the args:
-  // for(int i=0; i<xla_args.size(); i++){
-  //   std::cout<<xla_args[i].name<<":type:"<<xla_args[i].type<<":kind:"<<xla_args[i].kind<<":resource_kind:"<<xla_args[i].resource_kind<<":shape:"<<xla_args[i].shape<<":initialized:"<<xla_args[i].initialized<<"\n";
-  // }
-  // for (auto iter = xla_args.begin(); iter != xla_args.end(); ){
-  //   XlaCompiler::Argument xarg=*iter;
-  //   if(xarg.name.find("Placeholder")==std::string::npos && xarg.kind == XlaCompiler::Argument::kParameter &&xarg.resource_kind == 0 && xarg.initialized == false && xarg.name.find("kernel")==std::string::npos && xarg.name.find("bias")==std::string::npos){
-  //                 iter=xla_args.erase(iter);
-  //   }
-  //   else{
-  //     ++iter;
-  //   }
-
-  // }
-
-  // end
-  // to be removed
-    // compare the args:
-    for(int i=0;i<xla_args.size();i++){
-      std::cout<<xla_args[i].name<<":type:"<<xla_args[i].type<<":kind:"<<xla_args[i].kind<<":resource_kind:"<<xla_args[i].resource_kind<<":shape:"<<xla_args[i].shape<<":initialized:"<<xla_args[i].initialized<<"\n";
-    }
-    // end
-  // end
-
-
-  LOG(INFO) << "xla args in correct order\n";
+  LOG(INFO) << "xla args in correct order and matches fdef\n";
   xla::HloModuleProto hmod;
   {
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
