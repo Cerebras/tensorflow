@@ -114,13 +114,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
   FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
-  // to be removed
-  int n = fdef_lib.function().size();
-  std::cout<<"number of fdef_lib function "<<n<<"\n";
-  for(int i=0;i<n;i++){
-    std::cout<<fdef_lib.function()[i].signature().name()<<" \n";
-  }
-  // end
   auto fdef_iter = std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
 				[] (const FunctionDef& f_) -> bool {
 				  return (f_.signature().name().find("cluster_") == 0 &&
