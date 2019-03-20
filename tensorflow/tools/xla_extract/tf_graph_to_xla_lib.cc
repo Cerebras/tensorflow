@@ -137,7 +137,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     LOG(INFO) << "cluster not found, using "<<fdef.signature().name()<<" instead\n";
   }
 
-
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
 
