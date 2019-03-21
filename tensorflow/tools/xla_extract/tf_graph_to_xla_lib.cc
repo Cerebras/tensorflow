@@ -155,20 +155,26 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   auto fdef_ground_truth = fdef.signature().input_arg();
   std::vector<XlaCompiler::Argument> new_xla_args(fdef_ground_truth.size());
-
   const std::string kReadVarOpString = "readvariableop";
   const std::string kIdentityString = "identity";
   for (int i = 0; i < xla_args.size(); i++) {
     std::string xla_arg_name = xla_args[i].name;
+    xla_arg_name = str_util::Lowercase(xla_arg_name);
     xla_arg_name = str_util::ArgDefCase(xla_arg_name);
     xla_arg_name = xla_arg_name + "_0_arg";
-    xla_arg_name = str_util::Lowercase(xla_arg_name);
     xla_arg_name = str_util::StringReplace(xla_arg_name, kReadVarOpString,
                                            kIdentityString, true);
     for (int j = 0; j < fdef_ground_truth.size(); j++) {
       if (xla_arg_name == fdef_ground_truth[j].name()) {
         new_xla_args[j] = xla_args[i];
       }
+    }
+  }
+
+  for (int l = 0; l < fdef_ground_truth.size(); l++) {
+    if (new_xla_args[l].name == "") {
+      LOG(ERROR) << "name mismatch error for " << fdef_ground_truth[l].name();
+      std::exit(1);
     }
   }
 
