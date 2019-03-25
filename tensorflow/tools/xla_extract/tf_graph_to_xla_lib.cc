@@ -153,7 +153,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   LOG(INFO) << "fdef_args number:" << fdef.signature().input_arg().size()
             << "\n";
 
-
   // compares fdef_args(ground truth) with xla_args
   // prunes away extra args and reorders to match fdef_args
   // cant use fdef args directly due to name mismatch
