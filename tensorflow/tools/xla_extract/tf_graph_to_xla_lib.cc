@@ -153,6 +153,11 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   LOG(INFO) << "fdef_args number:" << fdef.signature().input_arg().size()
             << "\n";
 
+
+  // compares fdef_args(ground truth) with xla_args
+  // prunes away extra args and reorders to match fdef_args
+  // cant use fdef args directly due to name mismatch
+  // we can convert xla_args names to fdef_args names but not vice versa
   auto fdef_ground_truth = fdef.signature().input_arg();
   std::vector<XlaCompiler::Argument> new_xla_args(fdef_ground_truth.size());
   const std::string kReadVarOpString = "readvariableop";
