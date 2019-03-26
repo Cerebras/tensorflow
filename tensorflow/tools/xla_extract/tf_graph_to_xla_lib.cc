@@ -177,8 +177,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   for (int l = 0; l < fdef_ground_truth.size(); l++) {
     if (new_xla_args[l].name == "") {
-      LOG(ERROR) << "name mismatch error for " << fdef_ground_truth[l].name();
-      std::exit(1);
+      LOG(FATAL) << "name mismatch error for " << fdef_ground_truth[l].name();
     }
   }
 
