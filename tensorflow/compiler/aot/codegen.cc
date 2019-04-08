@@ -771,8 +771,7 @@ Status ValidateCppIdent(absl::string_view ident, absl::string_view msg) {
     return errors::InvalidArgument("illegal leading char: ", msg);
   }
   for (size_t pos = 1; pos < ident.size(); ++pos) {
-    if (ident[pos] != '_' && !IsAlphaNum(ident[pos]) && ident[pos] != '/') {
-      std::cout<<ident<<" "<<ident[pos]<<pos<<"\n";
+    if (ident[pos] != '_' && !IsAlphaNum(ident[pos])) {
       return errors::InvalidArgument("illegal char: ", msg);
     }
   }
