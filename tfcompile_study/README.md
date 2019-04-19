@@ -62,9 +62,9 @@ Major concerns/Feedback:
  * generating config file manually isn't feasible - script to generate this is in utils.py (for r2.0 and master branch versions)
  * naming of variables is extremely constrained, if they can loosen it for the xla generation, and can maintain the constraints for the output file generation that will be ideal.
  * rnn - some reason tf.while_loop isnt using maximum_iterations though its specified. (this feels like a red herring, seems to be the same issue as we had with our extractor, of using device xla_cpu_jit instead of xla_cpu)
- * `keras.layers.BatchNormalization` uses batch_normalization_v1 which doesn't seem to add the `update_ops` as the `tf.layers.batch_normalization`. - in general keras based layers/ops tend to use older version of variables and underneath functions.
+ * `keras.layers.BatchNormalization` uses batch_normalization_v1 which doesn't seem to add the `update_ops` as the `tf.layers.batch_normalization` does. - in general keras based layers/ops tend to use older version of variables and underneath functions.
 
 Files:  
 * utils.py - contains config generation script and run script to generate graph_def and config script from model_fn and input_fn
 * tf2xla_pb2.py - compiled protobuf file for python import
-* examples contain the different models tried.
+* examples contain the different models.
