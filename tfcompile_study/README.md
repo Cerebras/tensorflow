@@ -9,10 +9,10 @@ Originally it supports names that follow C++11 Standard naming convention, so th
 
 Build tfcompile:
   ```bash
-  bazel --output_user_root=/spare/vish_new build -c opt  //tensorflow/compiler/aot:tfcompile
+  bazel --output_user_root=/spare/build_new build -c opt  //tensorflow/compiler/aot:tfcompile
   ```
 
-`tf_compile` command line tool requires atleast
+`tf_compile` command line tool requires at least:
   * graph (.pbtxt or .pb)
   * config (.pbtxt or .pb)
   * cpp_class (for generated .h  and .o files)
@@ -23,7 +23,7 @@ cpp_class is set the same as in their examples (`mynamespace::MyComputation`)
 
 config:
   * This contains `feed` (input) nodes, `fetch` (output) nodes and `variable` nodes.
-  * The examples in the Tensorflow repo, are all generated manually, but for simple graphs, we can generate the config file based of the graph
+  * The examples in the Tensorflow repository, are all generated manually, but for simple graphs, we can generate the config file based of the graph
   * the config is based on the proto file (`tensorflow/compiler/tf2xla/tf2xla.proto`)
 
 
@@ -35,12 +35,12 @@ protoc --python_out=/path_to_store_compiled_file --proto_path=/path_to_tensorflo
 
 To run tfcompile:  
 ```bash
-TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile --graph=graph_modelfn.pbtxt --config=config_modelfn.config.pbtxt --cpp_class="mynamespace::MyComputation"
+TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile --graph=graph_model_fn.pbtxt --config=config_model_fn.config.pbtxt --cpp_class="mynamespace::MyComputation"
 ```
 
 
 #### Experiments:
-1. Experiments which passed: (able to compile successfully and viewed xla thorugh env variable (`TF_CPP_MIN_VLOG_LEVEL=3`))
+1. Experiments which passed: (able to compile successfully and viewed xla through env variable (`TF_CPP_MIN_VLOG_LEVEL=3`))
   * fully connected layers with `GradientDescentOptimizer`
   * fully connected layers with `AdamOptimizer`
   * fully connected layers with `batch_normalization(training=True)` and `GradientDescentOptimizer`
@@ -53,16 +53,19 @@ TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/comp
 2. Experiments which failed:
   * `BasicRNNCell` with `dynamic_rnn` - ```INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the maximum_iterations parameter to fix this issue.
 	 [[{{node dynamic_rnn/gradients/dynamic_rnn/func/while/TensorArrayWrite/TensorArrayWriteV3_grad/TensorArrayReadV3/f_acc}}]]```
+      * Both with and without specifying sequence_length failed. 
+      *  In our extract tool, if sequence_length is None, it can extract xla successfully.
+      *  While setting up our extract tool, rnns would generate two function defs (my understanding was one was xla_cpu, and other was xla_cpu_jit specific), the xla_cpu_jit specific version would give a similar error as above (since tfcompile uses xla_cpu_jit as device, I think its the same issue.)
  * Using `tf.keras.layers.SimpleRNNCell` and `tf.keras.layers.RNN` - same error as above
- * fully connected layers with `batch_normalization(training=False)` and `GradientDescentOptimizer`- ```Non-OK-status: status status: Internal: RET_CHECK failure (tensorflow/compiler/xla/service/hlo_input_output_alias_config.cc:32) ShapeUtil::IndexIsValid(alias_.shape(), output_index) Tring to set up alias at {9} which is an invalid index for shape (f32[], f32[2,2,1,1], f32[1], f32[729,256], f32[256], f32[256], f32[256], f32[256,10], f32[10])```
+ * fully connected layers with `batch_normalization(training=False)` and `GradientDescentOptimizer`- ```Non-OK-status: status status: Internal: RET_CHECK failure (tensorflow/compiler/xla/service/hlo_input_output_alias_config.cc:32) ShapeUtil::IndexIsValid(alias_.shape(), output_index) Trying to set up alias at {9} which is an invalid index for shape (f32[], f32[2,2,1,1], f32[1], f32[729,256], f32[256], f32[256], f32[256], f32[256,10], f32[10])```
  * cnn + fc layers with `batch_normalization(training=False)` and `GradientDescentOptimizer` - same error as above  
-    * In master branch, they are adding a read_only option to the variable config, which should solve this issue. Modified function to accept this has been added to the utils.py
+    * In master branch (commit 0886c6e0736135fdc4bbb4905b88158b66955abe), they are adding a read_only option to the variable config, which should solve this issue. Modified function to accept this has been added to the utils.py
 
 Major concerns/Feedback:
- * generating config file manually isn't feasible - script to generate this is in utils.py (for r2.0 and master branch versions)
+ * generating config file manually isn't feasible - script to generate this is in utils.py (for r2.0 and master branch versions (commit 0886c6e0736135fdc4bbb4905b88158b66955abe))
  * naming of variables is extremely constrained, if they can loosen it for the xla generation, and can maintain the constraints for the output file generation that will be ideal.
- * rnn - some reason tf.while_loop isnt using maximum_iterations though its specified. (this feels like a red herring, seems to be the same issue as we had with our extractor, of using device xla_cpu_jit instead of xla_cpu)
- * `keras.layers.BatchNormalization` uses batch_normalization_v1 which doesn't seem to add the `update_ops` as the `tf.layers.batch_normalization` does. - in general keras based layers/ops tend to use older version of variables and underneath functions.
+ * rnn - some reason tf.while_loop isn't using maximum_iterations though its specified. (this feels like a red herring, seems to be the same issue as we had with our extractor, of using device xla_cpu_jit instead of xla_cpu)
+ * `keras.layers.BatchNormalization` uses batch_normalization_v1 which doesn't seem to add the `update_ops` as the `tf.layers.batch_normalization` does. (Min seemed to be running into a similar issue with his Xception model training #17746)
 
 Files:  
 * utils.py - contains config generation script and run script to generate graph_def and config script from model_fn and input_fn
