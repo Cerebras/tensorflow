@@ -1,6 +1,6 @@
 ### tf_compile
 
-Note: based of tensorflow r2.0 branch   (to build we need to update git > 2.0)
+Note: based of tensorflow r2.0 branch (to build we need to update git > 2.0)
   * branch used can be found at https://github.com/Cerebras/tensorflow/tree/vishal/tfcompile
   *  this tf branch was build using the default settings in configure.
 
@@ -45,6 +45,7 @@ TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/comp
   * fully connected layers with `AdamOptimizer`
   * fully connected layers with `batch_normalization(training=True)` and `GradientDescentOptimizer`
   * fully connected layers with `batch_normalization(training=True)` and `AdamOptimizer`
+  * fully connected layers with `keras.BatchNormalization()` works if updates are captured and added (based of Min's PR (#17746) for Xception)
   * cnn + fc layers with `GradientDescentOptimizer`
   * cnn + fc layers with `AdamOptimizer`
   * cnn + fc layers with `batch_normalization(training=True)` and `GradientDescentOptimizer`
@@ -53,7 +54,7 @@ TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/comp
 2. Experiments which failed:
   * `BasicRNNCell` with `dynamic_rnn` - ```INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the maximum_iterations parameter to fix this issue.
 	 [[{{node dynamic_rnn/gradients/dynamic_rnn/func/while/TensorArrayWrite/TensorArrayWriteV3_grad/TensorArrayReadV3/f_acc}}]]```
-      * Both with and without specifying sequence_length failed. 
+      * Both with and without specifying sequence_length failed.
       *  In our extract tool, if sequence_length is None, it can extract xla successfully.
       *  While setting up our extract tool, rnns would generate two function defs (my understanding was one was xla_cpu, and other was xla_cpu_jit specific), the xla_cpu_jit specific version would give a similar error as above (since tfcompile uses xla_cpu_jit as device, I think its the same issue.)
  * Using `tf.keras.layers.SimpleRNNCell` and `tf.keras.layers.RNN` - same error as above
@@ -64,8 +65,7 @@ TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/comp
 Major concerns/Feedback:
  * generating config file manually isn't feasible - script to generate this is in utils.py (for r2.0 and master branch versions (commit 0886c6e0736135fdc4bbb4905b88158b66955abe))
  * naming of variables is extremely constrained, if they can loosen it for the xla generation, and can maintain the constraints for the output file generation that will be ideal.
- * rnn - some reason tf.while_loop isn't using maximum_iterations though its specified. (this feels like a red herring, seems to be the same issue as we had with our extractor, of using device xla_cpu_jit instead of xla_cpu)
- * `keras.layers.BatchNormalization` uses batch_normalization_v1 which doesn't seem to add the `update_ops` as the `tf.layers.batch_normalization` does. (Min seemed to be running into a similar issue with his Xception model training #17746)
+ * rnn - tf.while_loop isn't using maximum_iterations though its specified error (details in Experiment)
 
 Files:  
 * utils.py - contains config generation script and run script to generate graph_def and config script from model_fn and input_fn
