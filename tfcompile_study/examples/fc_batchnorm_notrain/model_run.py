@@ -38,4 +38,4 @@ def input_fn():
 
 
 if __name__ == "__main__":
-    run(model_fn, input_fn, "fc_batchnorm_notrain")
+    run(model_fn, input_fn, "fc_batchnorm_notrain", False)

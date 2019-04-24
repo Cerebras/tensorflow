@@ -41,19 +41,19 @@ def config_from_graph(input_tensors,
                     node_name=graph_def.node[i].name,
                     shape=graph_def.node[i].attr["shape"].shape,
                     type=graph_def.node[i].attr["dtype"].type,
-                    read_only=not is_training)
+                    readonly=not is_training)
 
     return config
 
 
-def run(model_fn, input_fn, file_name):
+def run(model_fn, input_fn, file_name, is_training=None):
     x, y = input_fn()
     out = model_fn(x, y)
     graph = out.graph.as_graph_def(add_shapes=True)
     file_graph = "graph_" + file_name + ".pbtxt"
     with open(file_graph, 'w') as f:
         f.write(str(graph))
-    config = config_from_graph([x, y], [out], graph)
+    config = config_from_graph([x, y], [out], graph, is_training)
     file_config = "config_" + file_name + ".config.pbtxt"
     with open(file_config, 'w') as f:
         f.write(str(config))

@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='tensorflow/compiler/tf2xla/tf2xla.proto',
   package='tensorflow.tf2xla',
   syntax='proto3',
-  serialized_pb=_b('\n\'tensorflow/compiler/tf2xla/tf2xla.proto\x12\x11tensorflow.tf2xla\x1a,tensorflow/core/framework/tensor_shape.proto\x1a%tensorflow/core/framework/types.proto\"3\n\x08TensorId\x12\x11\n\tnode_name\x18\x01 \x01(\t\x12\x14\n\x0coutput_index\x18\x02 \x01(\x03\"\x8e\x01\n\x04\x46\x65\x65\x64\x12\'\n\x02id\x18\x01 \x01(\x0b\x32\x1b.tensorflow.tf2xla.TensorId\x12+\n\x05shape\x18\x02 \x01(\x0b\x32\x1c.tensorflow.TensorShapeProto\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\"\n\x04type\x18\x04 \x01(\x0e\x32\x14.tensorflow.DataType\">\n\x05\x46\x65tch\x12\'\n\x02id\x18\x01 \x01(\x0b\x32\x1b.tensorflow.tf2xla.TensorId\x12\x0c\n\x04name\x18\x02 \x01(\t\"|\n\x08Variable\x12\x11\n\tnode_name\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12+\n\x05shape\x18\x03 \x01(\x0b\x32\x1c.tensorflow.TensorShapeProto\x12\"\n\x04type\x18\x04 \x01(\x0e\x32\x14.tensorflow.DataType\"\x87\x01\n\x06\x43onfig\x12%\n\x04\x66\x65\x65\x64\x18\x01 \x03(\x0b\x32\x17.tensorflow.tf2xla.Feed\x12\'\n\x05\x66\x65tch\x18\x02 \x03(\x0b\x32\x18.tensorflow.tf2xla.Fetch\x12-\n\x08variable\x18\x03 \x03(\x0b\x32\x1b.tensorflow.tf2xla.VariableB*\n\x15org.tensorflow.tf2xlaB\x0cTf2XlaProtosP\x01\xf8\x01\x01\x62\x06proto3')
+  serialized_pb=_b('\n\'tensorflow/compiler/tf2xla/tf2xla.proto\x12\x11tensorflow.tf2xla\x1a,tensorflow/core/framework/tensor_shape.proto\x1a%tensorflow/core/framework/types.proto\"3\n\x08TensorId\x12\x11\n\tnode_name\x18\x01 \x01(\t\x12\x14\n\x0coutput_index\x18\x02 \x01(\x03\"\x8e\x01\n\x04\x46\x65\x65\x64\x12\'\n\x02id\x18\x01 \x01(\x0b\x32\x1b.tensorflow.tf2xla.TensorId\x12+\n\x05shape\x18\x02 \x01(\x0b\x32\x1c.tensorflow.TensorShapeProto\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\"\n\x04type\x18\x04 \x01(\x0e\x32\x14.tensorflow.DataType\">\n\x05\x46\x65tch\x12\'\n\x02id\x18\x01 \x01(\x0b\x32\x1b.tensorflow.tf2xla.TensorId\x12\x0c\n\x04name\x18\x02 \x01(\t\"\x8e\x01\n\x08Variable\x12\x11\n\tnode_name\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12+\n\x05shape\x18\x03 \x01(\x0b\x32\x1c.tensorflow.TensorShapeProto\x12\"\n\x04type\x18\x04 \x01(\x0e\x32\x14.tensorflow.DataType\x12\x10\n\x08readonly\x18\x05 \x01(\x08\"7\n\x11\x43onversionOptions\x12\"\n\x1a\x63ustom_fake_quant_op_calls\x18\x01 \x01(\x08\"\xc9\x01\n\x06\x43onfig\x12%\n\x04\x66\x65\x65\x64\x18\x01 \x03(\x0b\x32\x17.tensorflow.tf2xla.Feed\x12\'\n\x05\x66\x65tch\x18\x02 \x03(\x0b\x32\x18.tensorflow.tf2xla.Fetch\x12-\n\x08variable\x18\x03 \x03(\x0b\x32\x1b.tensorflow.tf2xla.Variable\x12@\n\x12\x63onversion_options\x18\x04 \x01(\x0b\x32$.tensorflow.tf2xla.ConversionOptionsB*\n\x15org.tensorflow.tf2xlaB\x0cTf2XlaProtosP\x01\xf8\x01\x01\x62\x06proto3')
   ,
   dependencies=[tensorflow_dot_core_dot_framework_dot_tensor__shape__pb2.DESCRIPTOR,tensorflow_dot_core_dot_framework_dot_types__pb2.DESCRIPTOR,])
 
@@ -191,6 +191,13 @@ _VARIABLE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='readonly', full_name='tensorflow.tf2xla.Variable.readonly', index=4,
+      number=5, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -203,8 +210,39 @@ _VARIABLE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=409,
-  serialized_end=533,
+  serialized_start=410,
+  serialized_end=552,
+)
+
+
+_CONVERSIONOPTIONS = _descriptor.Descriptor(
+  name='ConversionOptions',
+  full_name='tensorflow.tf2xla.ConversionOptions',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='custom_fake_quant_op_calls', full_name='tensorflow.tf2xla.ConversionOptions.custom_fake_quant_op_calls', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=554,
+  serialized_end=609,
 )
 
 
@@ -236,6 +274,13 @@ _CONFIG = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='conversion_options', full_name='tensorflow.tf2xla.Config.conversion_options', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -248,8 +293,8 @@ _CONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=536,
-  serialized_end=671,
+  serialized_start=612,
+  serialized_end=813,
 )
 
 _FEED.fields_by_name['id'].message_type = _TENSORID
@@ -261,10 +306,12 @@ _VARIABLE.fields_by_name['type'].enum_type = tensorflow_dot_core_dot_framework_d
 _CONFIG.fields_by_name['feed'].message_type = _FEED
 _CONFIG.fields_by_name['fetch'].message_type = _FETCH
 _CONFIG.fields_by_name['variable'].message_type = _VARIABLE
+_CONFIG.fields_by_name['conversion_options'].message_type = _CONVERSIONOPTIONS
 DESCRIPTOR.message_types_by_name['TensorId'] = _TENSORID
 DESCRIPTOR.message_types_by_name['Feed'] = _FEED
 DESCRIPTOR.message_types_by_name['Fetch'] = _FETCH
 DESCRIPTOR.message_types_by_name['Variable'] = _VARIABLE
+DESCRIPTOR.message_types_by_name['ConversionOptions'] = _CONVERSIONOPTIONS
 DESCRIPTOR.message_types_by_name['Config'] = _CONFIG
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -295,6 +342,13 @@ Variable = _reflection.GeneratedProtocolMessageType('Variable', (_message.Messag
   # @@protoc_insertion_point(class_scope:tensorflow.tf2xla.Variable)
   ))
 _sym_db.RegisterMessage(Variable)
+
+ConversionOptions = _reflection.GeneratedProtocolMessageType('ConversionOptions', (_message.Message,), dict(
+  DESCRIPTOR = _CONVERSIONOPTIONS,
+  __module__ = 'tensorflow.compiler.tf2xla.tf2xla_pb2'
+  # @@protoc_insertion_point(class_scope:tensorflow.tf2xla.ConversionOptions)
+  ))
+_sym_db.RegisterMessage(ConversionOptions)
 
 Config = _reflection.GeneratedProtocolMessageType('Config', (_message.Message,), dict(
   DESCRIPTOR = _CONFIG,
