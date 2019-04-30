@@ -56,6 +56,7 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           arg.shape = shape_value[0];
         }
         arg.name = in_def.name();
+
         GetNodeAttr(in_def, "dtype", &(arg.type));
         if (arg.type == DT_INVALID) {
           arg.type = DT_FLOAT;
@@ -143,7 +144,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     LOG(INFO) << "cluster not found, using " << fdef.signature().name()
               << " instead\n";
   }
+
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
+
   // to make sure xla_args matches fdef
 
   LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
