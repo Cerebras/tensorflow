@@ -103,6 +103,7 @@ COMMON_PIP_DEPS = [
     "//tensorflow/tools/docs:generate_lib",
     "//tensorflow/tools/docs:parser",
     "//tensorflow/tools/docs:py_guide_parser",
+    "//tensorflow/tools/xla_extract",
 ]
 
 COMMON_PIP_DEPS_V1 = COMMON_PIP_DEPS + [
