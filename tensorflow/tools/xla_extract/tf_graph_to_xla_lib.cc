@@ -46,9 +46,9 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           arg.kind = XlaCompiler::Argument::kResource;
           arg.resource_kind = XlaResource::kVariable;
           arg.initialized = true;
-          std::vector<tensorflow::TensorShape> shape_value;
+          tensorflow::TensorShape shape_value;
           GetNodeAttr(in_def, "shape", &shape_value);
-          arg.shape = shape_value[0];
+          arg.shape = shape_value;
         } else {
           arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
@@ -56,7 +56,6 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           arg.shape = shape_value[0];
         }
         arg.name = in_def.name();
-
         GetNodeAttr(in_def, "dtype", &(arg.type));
         if (arg.type == DT_INVALID) {
           arg.type = DT_FLOAT;
@@ -144,9 +143,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     LOG(INFO) << "cluster not found, using " << fdef.signature().name()
               << " instead\n";
   }
-
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
-
   // to make sure xla_args matches fdef
 
   LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
@@ -236,9 +233,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     pipeline.AddPass<xla::ReshapeMover>();
     pipeline.AddPass<xla::HloConstantFolding>();
     pipeline.AddPass<xla::HloCSE>(true);
-    pipeline.AddPass<xla::LayoutAssignment>(
-        hlo_module.get()->mutable_entry_computation_layout(),
-        xla::LayoutAssignment::InstructionCanChangeLayout);
+    // pipeline.AddPass<xla::LayoutAssignment>(
+    //     hlo_module.get()->mutable_entry_computation_layout(),
+    //     xla::LayoutAssignment::InstructionCanChangeLayout);
     pipeline.AddPass<xla::HloDCE>();
     pipeline.AddPass<xla::FlattenCallGraph>();
 
