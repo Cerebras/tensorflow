@@ -38,46 +38,46 @@ These conclusions were reached after running the following experiments:
 
   * Experiments which failed:
     1. Using `BasicRNNCell` with `dynamic_rnn` Error:
-    ```Bash
-    INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the
-    maximum_iterations parameter to fix this issue.
-    [[{{node dynamic_rnn/gradients/dynamic_rnn/func/while/TensorArrayWrite/TensorArrayWriteV3_grad/TensorArrayReadV3/f_acc}}]]
-    ```
-    1. Using `tf.keras.layers.SimpleRNNCell` and `tf.keras.layers.RNN` Error: same error as above
-    1. Using `BasicRNNCell` with `dynamic_rnn` with seq_length specified Error: same error as above
-      *  In our extract tool, it can extract xla successfully for all above 3 experiments.
-      *  While setting up our extract tool, rnns would generate multiple function defs (my understanding was one of them was for xla_cpu device , and another one was for xla_cpu_jit device), the xla_cpu_jit specific version would give a similar error as above (since tfcompile uses xla_cpu_jit as device, it might be the same issue.)
+      ```Bash
+      INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the
+      maximum_iterations parameter to fix this issue.
+      [[{{node dynamic_rnn/gradients/dynamic_rnn/func/while/TensorArrayWrite/TensorArrayWriteV3_grad/TensorArrayReadV3/f_acc}}]]
+      ```
+    2. Using `tf.keras.layers.SimpleRNNCell` and `tf.keras.layers.RNN` Error: same error as above
+    3. Using `BasicRNNCell` with `dynamic_rnn` with seq_length specified Error: same error as above
+      * In our extract tool, it can extract xla successfully for all above 3 experiments.
+      * While setting up our extract tool, rnns would generate multiple function defs (my understanding was one of them was for xla_cpu device , and another one was for xla_cpu_jit device), the xla_cpu_jit specific version would give a similar error as above (since tfcompile uses xla_cpu_jit as device, it might be the same issue.)
 
 **To replicate the experiments:**
   1. **Tensorflow Version:**  
-    * Based of tensorflow r1.14 branch
-    * Branch used can be found at https://github.com/Cerebras/tensorflow/tree/vishal/tf14_tfcompile/
-    *  This tf branch was build using the default settings in `./configure`.
-    * Only change in the code base is in `tensorflow/compiler/aot/codegen.cc#L774` to support `/` in node names.
-      * Originally it supports names that follow C++11 Standard naming convention, so this change is to handle variable_scope.
+     * Based of tensorflow r1.14 branch
+     * Branch used can be found at https://github.com/Cerebras/tensorflow/tree/vishal/tf14_tfcompile/
+     *  This tf branch was build using the default settings in `./configure`.
+     * Only change in the code base is in `tensorflow/compiler/aot/codegen.cc#L774` to support `/` in node names.
+       * Originally it supports names that follow C++11 Standard naming convention, so this change is to handle variable_scope.
 
   2. **Inputs given to tfcompile:**  
-    * `tfcompile` command line tool requires at least:
-      1. `--graph` (.pbtxt or .pb)
+     * `tfcompile` command line tool requires at least:
+       1. `--graph` (.pbtxt or .pb)
          * graph is extracted from the model (setting `add_shapes=True`)
-      2. `--config` (.pbtxt or .pb)
+       2. `--config` (.pbtxt or .pb)
          * This contains `feed` (input) nodes, `fetch` (output) nodes and `variable` nodes.
          * The examples in the Tensorflow repository, are all generated manually, but for those examples and the ones we tested, we generated the config file based of the graph
          * the config is based on the proto file (`tensorflow/compiler/tf2xla/tf2xla.proto`)
-      3. `--cpp_class` (for generated .h  and .o files)
+       3. `--cpp_class` (for generated .h  and .o files)
          * cpp_class is set to the same as in their examples (`mynamespace::MyComputation`)
 
   3. **To compile tf2xla.proto**  
      ```Bash
      protoc --python_out=/path_to_store_compiled_file --proto_path=/path_to_tensorflow_dir/tensorflow   tensorflow/compiler/tf2xla/tf2xla.proto
      ```
-   * Currently stored at https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py
+     * Currently stored at https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py
 
   4. **To run tfcompile:**  
      ```Bash
      TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile --graph=graph_model_fn.pbtxt --config=config_model_fn.config.pbtxt --cpp_class="mynamespace::MyComputation"
      ```
-   * Is being called within the run function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75)
+     * Is being called within the run function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75)
 
 
   5. **Files to replicate experiments:**  
