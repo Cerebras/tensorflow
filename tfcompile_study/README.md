@@ -4,15 +4,15 @@
  Cerebras Systems is building an accelerator, and to support tensorflow, we use XLA as the input to our stack. Currently we use an XLA extraction tool developed [in house](https://github.com/Cerebras/tensorflow/tree/vishal/tf14_hlopass/tensorflow/tools/xla_extract).
 
  This document evaluates tfcompile as a suitable alternate except for a few concerns:
-  1. Generating config file manually isn't feasible -
-    * Provided a script to generate for our examples in utils.py (for r1.14), ideally this can be extended to all use cases of tfcompile.
-  1. Naming of variables is extremely constrained -
-    * Currently naming must follow C++ naming conventions, which is limited as it does not support many special characters such as `/` which are added when using `variable_scope` and certain TF layers.
-    * If we can loosen this constraint up to the XLA generation stage, so that XLA of large models can be generated.
-    *  Handled by adding `/` support in the codegen.cc (Refer tensorflow version)
-  1. RNNS do not seem to be supported -
-    * more specifically `tf.while_loop` throws an error of not using  maximum_iterations though its specified (details in Experiment).
-    * XLA does support these operations in 1.14 (with and without seq_length specified)
+  1. Generating config file manually isn't feasible:
+     * Provided a script to generate for our examples in utils.py (for r1.14), ideally this can be extended to all use cases of tfcompile.<br/>
+  1. Naming of variables is extremely constrained -<br/>
+     * Currently naming must follow C++ naming conventions, which is limited as it does not support many special characters such as `/` which are added when using `variable_scope` and certain TF layers.<br/>
+     * If we can loosen this constraint up to the XLA generation stage, so that XLA of large models can be generated.<br/>
+     * Handled by adding `/` support in the codegen.cc (Refer tensorflow version).<br/>
+  1. RNNS do not seem to be supported -<br/>
+     *  more specifically `tf.while_loop` throws an error of not using  maximum_iterations though its specified (details in Experiment).<br/>
+     *  XLA does support these operations in 1.14 (with and without seq_length specified).<br/>
 
 If these concerns can be addressed, it would make tfcompile ideal for our use case.
 
@@ -38,7 +38,7 @@ These conclusions were reached after running the following experiments:
 
   * Experiments which failed:
     1. Using `BasicRNNCell` with `dynamic_rnn` Error:
-    ```
+    ```Bash
     INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the
     maximum_iterations parameter to fix this issue.
     [[{{node dynamic_rnn/gradients/dynamic_rnn/func/while/TensorArrayWrite/TensorArrayWriteV3_grad/TensorArrayReadV3/f_acc}}]]
@@ -48,7 +48,7 @@ These conclusions were reached after running the following experiments:
       *  In our extract tool, it can extract xla successfully for all above 3 experiments.
       *  While setting up our extract tool, rnns would generate multiple function defs (my understanding was one of them was for xla_cpu device , and another one was for xla_cpu_jit device), the xla_cpu_jit specific version would give a similar error as above (since tfcompile uses xla_cpu_jit as device, it might be the same issue.)
 
-** To replicate the experiments:**
+**To replicate the experiments:**
   1. **Tensorflow Version:**  
     * Based of tensorflow r1.14 branch
     * Branch used can be found at https://github.com/Cerebras/tensorflow/tree/vishal/tf14_tfcompile/
@@ -57,31 +57,30 @@ These conclusions were reached after running the following experiments:
       * Originally it supports names that follow C++11 Standard naming convention, so this change is to handle variable_scope.
 
   2. **Inputs given to tfcompile:**  
-
     * `tfcompile` command line tool requires at least:
       1. `--graph` (.pbtxt or .pb)
-        * graph is extracted from the model (setting `add_shapes=True`)
+         * graph is extracted from the model (setting `add_shapes=True`)
       2. `--config` (.pbtxt or .pb)
-        * This contains `feed` (input) nodes, `fetch` (output) nodes and `variable` nodes.
-        * The examples in the Tensorflow repository, are all generated manually, but for those examples and the ones we tested, we generated the config file based of the graph
-        * the config is based on the proto file (`tensorflow/compiler/tf2xla/tf2xla.proto`)
+         * This contains `feed` (input) nodes, `fetch` (output) nodes and `variable` nodes.
+         * The examples in the Tensorflow repository, are all generated manually, but for those examples and the ones we tested, we generated the config file based of the graph
+         * the config is based on the proto file (`tensorflow/compiler/tf2xla/tf2xla.proto`)
       3. `--cpp_class` (for generated .h  and .o files)
-        * cpp_class is set to the same as in their examples (`mynamespace::MyComputation`)
+         * cpp_class is set to the same as in their examples (`mynamespace::MyComputation`)
 
   3. **To compile tf2xla.proto**  
-    ```bash
-    protoc --python_out=/path_to_store_compiled_file --proto_path=/path_to_tensorflow_dir/tensorflow   tensorflow/compiler/tf2xla/tf2xla.proto
-    ```
-    * Currently stored at https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py
+     ```Bash
+     protoc --python_out=/path_to_store_compiled_file --proto_path=/path_to_tensorflow_dir/tensorflow   tensorflow/compiler/tf2xla/tf2xla.proto
+     ```
+   * Currently stored at https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py
 
   4. **To run tfcompile:**  
-    ```bash
-    TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile --graph=graph_model_fn.pbtxt --config=config_model_fn.config.pbtxt --cpp_class="mynamespace::MyComputation"
-    ```
-    * Is being called within the run function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75)
+     ```Bash
+     TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile --graph=graph_model_fn.pbtxt --config=config_model_fn.config.pbtxt --cpp_class="mynamespace::MyComputation"
+     ```
+   * Is being called within the run function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75)
 
 
   5. **Files to replicate experiments:**  
-    1. utils.py - contains config generation script and run script to generate the `graph_def` and the config script from the `model_fn` and the `input_fn`.
-    1. tf2xla_pb2.py - compiled protobuf file of `tf2xla.proto` for python import
-    1. examples - directory with each subdirectory containing a specific model.
+     1. utils.py - contains config generation script and run script to generate the `graph_def` and the config script from the `model_fn` and the `input_fn`.
+     2. tf2xla_pb2.py - compiled protobuf file of `tf2xla.proto` for python import.
+     3. examples - directory with each subdirectory containing a specific model.
