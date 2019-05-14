@@ -1,12 +1,12 @@
 ## Cerebras Systems use case for tfcompile
-This document evaluates tfcompile for Cerebras’ use cases.
+This document evaluates `tfcompile` for Cerebras’ use cases.
 
  Cerebras Systems is building a new chip and system to accelerate deep learning workloads. To support Tensorflow, we use XLA as the input to our stack. Currently, to get the XLA graph, we use an XLA extraction tool developed [in house](https://github.com/Cerebras/tensorflow/tree/vishal/tf14_hlopass/tensorflow/tools/xla_extract).
 
  In spirit, tfcompile is exactly what we need. However, the following concerns currently prevent us from being able to use tfcompile as a viable solution:
   1. It is impractical to have a user manually generate a config file for every model they want to run through the tool, especially for large models.
      * One way to significantly improve this workflow is to automatically generate the config file. All the information needed is already provided in the graph.pbtxt.<br/>
-     * We have included an example script that generates the config file for our provided examples in utils.py (for r1.14). Ideally, a solution like this can be adopted for tfcompile.
+     * We have included an example script that generates the config file for our provided examples in utils.py (for r1.14). Ideally, a solution like this can be adopted for `tfcompile`.
   1. Naming of variables is prohibitively restrictive.<br/>
      * Currently, naming must follow C++ naming conventions, which does not support special characters such as `/`. This means `tfcompile` throws an error any time a user uses variable_scope or certain TF layers like dropout, which will automatically include `/` in the tensor name. 
 <br/>
@@ -15,9 +15,10 @@ This document evaluates tfcompile for Cerebras’ use cases.
   1. RNNs are not supported through tfcompile, even though XLA in 1.13+ does
 <br/>
      *  `tf.while_loop` throws an `Invalid Arguments` error that does not correctly use the `maximum_iterations` parameter, even if it has been specified: <br/>
-      ```
-      INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the maximum_iterations parameter to fix this issue.
-      ```
+     ```
+     INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the
+     maximum_iterations parameter to fix this issue.
+     ```
      * More details in ‘Experiments’ below.<br/>
 
 Addressing these concerns would make tfcompile an ideal solution for 3rd party hardware vendors using XLA as input for their system.
@@ -40,17 +41,17 @@ In our evaluation of tfcompile, we ran 14 models with different common neural ne
 13. Fully connected layers with `batch_normalization(training=False)`, using `GradientDescentOptimizer` - (`examples/fc_batchnorm_notrain`)
 14. CNN + fully connected layers with `batch_normalization(training=False)`, using `GradientDescentOptimizer` - (`examples/conv_fc_batchnorm_notrain`)
 
-  * Experiments which failed:
-    1. Using `BasicRNNCell` with `dynamic_rnn` Error:
-      ```Bash
-      INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the
-      maximum_iterations parameter to fix this issue.
-      [[{{node dynamic_rnn/gradients/dynamic_rnn/func/while/TensorArrayWrite/TensorArrayWriteV3_grad/TensorArrayReadV3/f_acc}}]]
-      ```
-    2. Using `tf.keras.layers.SimpleRNNCell` and `tf.keras.layers.RNN` Error: same error as above
-    3. Using `BasicRNNCell` with `dynamic_rnn` with seq_length specified Error: same error as above
-      * In our extract tool, it can extract xla successfully for all above 3 experiments.
-      * While setting up our extract tool, rnns would generate multiple function defs (my understanding was one of them was for xla_cpu device , and another one was for xla_cpu_jit device), the xla_cpu_jit specific version would give a similar error as above (since tfcompile uses xla_cpu_jit as device, it might be the same issue.)
+**Experiments which failed:**
+ 1. Using `BasicRNNCell` with `dynamic_rnn` Error:
+    ```Bash
+    INVALID ARGUMENTS: XLA compilation requires a fixed stack size upper bound. If you are using tf.while_loop, set the
+    maximum_iterations parameter to fix this issue.
+    [[{{node dynamic_rnn/gradients/dynamic_rnn/func/while/TensorArrayWrite/TensorArrayWriteV3_grad/TensorArrayReadV3/f_acc}}]]
+    ```
+ 2. Using `tf.keras.layers.SimpleRNNCell` and `tf.keras.layers.RNN` Error: same error as above
+ 3. Using `BasicRNNCell` with `dynamic_rnn` with seq_length specified Error: same error as above
+   * In our extract tool, it can extract xla successfully for all above 3 experiments.
+   * While setting up our extract tool, rnns would generate multiple function defs (my understanding was one of them was for xla_cpu device , and another one was for xla_cpu_jit device), the xla_cpu_jit specific version would give a similar error as above (since tfcompile uses xla_cpu_jit as device, it might be the same issue.)
 
 **To replicate the experiments:**
   1. **Tensorflow Version:**  
