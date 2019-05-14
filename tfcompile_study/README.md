@@ -53,8 +53,8 @@ In our evaluation of `tfcompile`, we ran 14 models with different common neural 
 
 **To replicate the experiments:**
   1. **TensorFlow Version:**  
-     * Based off of the TensorFlow r1.14 branch
-     * Branch used can be found [here](https://github.com/Cerebras/tensorflow/tree/vishal/tf14_tfcompile/)
+     * Based off of the TensorFlow r1.14 branch.
+     * Branch used can be found [here](https://github.com/Cerebras/tensorflow/tree/vishal/tf14_tfcompile/).
      * This tf branch was built using the default settings in `./configure`.
      * The only change we made to the code base is in `tensorflow/compiler/aot/codegen.cc#L774` to support `/` in node names.
        * Originally, it supports names that follow the C++11 Standard naming convention, so this change is to handle variable_scope.
@@ -62,25 +62,25 @@ In our evaluation of `tfcompile`, we ran 14 models with different common neural 
   2. **Inputs given to tfcompile:**  
      * `tfcompile` command line tool requires at least:
        1. `--graph` (.pbtxt or .pb)
-         * graph is extracted from the model (setting `add_shapes=True`)
+         * graph is extracted from the model (setting `add_shapes=True`).
        2. `--config` (.pbtxt or .pb)
          * This contains `feed` (input) nodes, `fetch` (output) nodes and `variable` nodes.
-         * The examples in the TensorFlow repository, are all generated manually, but for those examples and the ones we tested, we generated the config file based of the graph
+         * The examples in the TensorFlow repository, are all generated manually, but for those examples and the ones we tested, we generated the config file based of the graph.
          * the config is based on the proto file (`tensorflow/compiler/tf2xla/tf2xla.proto`)
        3. `--cpp_class` (for generated .h  and .o files)
-         * cpp_class is set to the same as in their examples (`mynamespace::MyComputation`)
+         * cpp_class is set to the same as in their examples (`mynamespace::MyComputation`).
 
   3. **To compile tf2xla.proto**  
      ```Bash
      protoc --python_out=/path_to_store_compiled_file --proto_path=/path_to_tensorflow_dir/tensorflow   tensorflow/compiler/tf2xla/tf2xla.proto
      ```
-     * Currently stored [here](https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py)
+     * Currently stored [here](https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py).
 
   4. **To run tfcompile:**  
      ```Bash
      TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile --graph=graph_model_fn.pbtxt --config=config_model_fn.config.pbtxt --cpp_class="mynamespace::MyComputation"
      ```
-     * Is being called within the `run` function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75)
+     * Is being called within the `run` function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75).
 
 
   5. **Files to replicate our experiments:**  
