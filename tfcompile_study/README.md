@@ -54,7 +54,7 @@ In our evaluation of `tfcompile`, we ran 14 models with different common neural 
 **To replicate the experiments:**
   1. **Tensorflow Version:**  
      * Based of tensorflow r1.14 branch
-     * Branch used can be found at https://github.com/Cerebras/tensorflow/tree/vishal/tf14_tfcompile/
+     * Branch used can be found [here](https://github.com/Cerebras/tensorflow/tree/vishal/tf14_tfcompile/)
      *  This tf branch was build using the default settings in `./configure`.
      * Only change in the code base is in `tensorflow/compiler/aot/codegen.cc#L774` to support `/` in node names.
        * Originally it supports names that follow C++11 Standard naming convention, so this change is to handle variable_scope.
@@ -74,13 +74,13 @@ In our evaluation of `tfcompile`, we ran 14 models with different common neural 
      ```Bash
      protoc --python_out=/path_to_store_compiled_file --proto_path=/path_to_tensorflow_dir/tensorflow   tensorflow/compiler/tf2xla/tf2xla.proto
      ```
-     * Currently stored at https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py
+     * Currently stored [here](https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py)
 
   4. **To run tfcompile:**  
      ```Bash
      TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile --graph=graph_model_fn.pbtxt --config=config_model_fn.config.pbtxt --cpp_class="mynamespace::MyComputation"
      ```
-     * Is being called within the run function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75)
+     * Is being called within the `run` function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75)
 
 
   5. **Files to replicate experiments:**  
