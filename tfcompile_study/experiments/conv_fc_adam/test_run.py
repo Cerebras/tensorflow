@@ -41,7 +41,5 @@ def input_fn():
     return x, y
 
 def test_model():
-    run(model_fn, input_fn, "conv_fc_adam", True)
+    run(model_fn, input_fn, "conv_fc_adam", is_training=True)
 
-# if __name__ == "__main__":
-#     run(model_fn, input_fn, "conv_fc_adam", True)

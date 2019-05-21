@@ -44,4 +44,4 @@ def input_fn():
     return x, y
 
 def test_model():
-    run(model_fn, input_fn, "conv_fc_batchnorm_adam", TRAINING)
+    run(model_fn, input_fn, "conv_fc_batchnorm_adam", is_training=TRAINING)

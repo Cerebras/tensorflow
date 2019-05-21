@@ -43,7 +43,6 @@ def input_fn():
     y = tf.placeholder(tf.float32, [BATCH_SIZE, LABELS], name='y')
     return x, y
 
-
 def test_model():
-    run(model_fn, input_fn, "conv_fc_batchnorm", TRAINING)
+    run(model_fn, input_fn, "conv_fc_batchnorm", is_training=TRAINING)
 
