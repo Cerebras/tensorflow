@@ -60,8 +60,8 @@ def run(model_fn, input_fn, file_name, is_training=True, only_gen=False):
         only_gen: If we want only the inputs to be generated and not the outputs of tfcompile
         is_training: For operations like batchnorm, to capture which variables are being trained and which ones won't be
     """
-    inputs = input_fn()
-    out = model_fn(*inputs)
+    x,y = input_fn()
+    out = model_fn(x,y)
     trainable_vars_names =[var.op.name for var in tf.trainable_variables(scope=None)]
     graph = out.graph.as_graph_def(add_shapes=True)
     file_graph = "graph_" + file_name + ".pbtxt"
