@@ -10,7 +10,7 @@ NUM_CLASSES = 10
 STATE_SIZE = 32
 
 
-def model_fn(features, labels):
+def model_fn(features, labels, is_training=True):
     with tf.variable_scope("keras_rnn", use_resource=True,
                            reuse=tf.AUTO_REUSE):
         rnn_cell = tf.keras.layers.SimpleRNNCell(STATE_SIZE)
@@ -35,5 +35,6 @@ def input_fn():
     y = tf.placeholder(tf.float32, shape=yshape, name='y')
     return x, y
 
+
 def test_model():
-    run(model_fn, input_fn, "keras_rnn", True)
+    run(model_fn, input_fn, "keras_rnn", is_training=True)

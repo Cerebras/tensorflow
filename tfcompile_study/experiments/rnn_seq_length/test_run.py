@@ -18,7 +18,7 @@ LSTM_UNITS = 1000
 LEARNING_RATE = 0.7
 
 
-def model_fn(inputs, labels):
+def model_fn(inputs, labels, is_training=True):
     sequence_lengths = tf.constant(SEQ_LENS)
     outputs, _ = tf.nn.dynamic_rnn(LSTMCell(LSTM_UNITS),
                                    inputs,
@@ -40,6 +40,6 @@ def input_fn():
     labels_holder = tf.placeholder(tf.int32, shape=[BATCH_SIZE, MAX_SEQ_LEN])
     return inputs_holder, labels_holder
 
-@pytest.mark.cerebras
+
 def test_model():
-    run(model_fn, input_fn, "rnn_seq_length", True)
+    run(model_fn, input_fn, "rnn_seq_length", is_training=True)

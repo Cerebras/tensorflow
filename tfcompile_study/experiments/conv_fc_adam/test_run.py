@@ -14,7 +14,7 @@ WIDTH = 28
 CHANNELS = 3
 
 
-def model_fn(features, labels):
+def model_fn(features, labels, is_training=True):
     with tf.variable_scope("conv_fc", use_resource=True):
         net = tf.keras.layers.Conv2D(filters=4,
                                      kernel_size=[2, 2],
@@ -40,6 +40,6 @@ def input_fn():
     y = tf.placeholder(tf.float32, [BATCH_SIZE, LABELS], name='y')
     return x, y
 
-def test_model():
-    run(model_fn, input_fn, "conv_fc_adam", is_training=True)
 
+def test_model():
+    run(model_fn, input_fn, file_name="conv_fc_adam", is_training=True)

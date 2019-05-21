@@ -12,7 +12,7 @@ BATCH_SIZE = 64
 FEAT_DIM = 784
 
 
-def model_fn(features, labels):
+def model_fn(features, labels, is_training=True):
     with tf.variable_scope("fc", use_resource=True):
         net = features
         for i in range(HIDDEN_LAYERS - 1):
@@ -36,5 +36,4 @@ def input_fn():
 
 
 def test_model():
-    run(model_fn, input_fn, "fc_adam", True)
-
+    run(model_fn, input_fn, "fc_adam", is_training=True)

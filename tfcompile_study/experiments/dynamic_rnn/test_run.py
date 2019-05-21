@@ -10,7 +10,7 @@ NUM_CLASSES = 10
 STATE_SIZE = 32
 
 
-def model_fn(features, labels):
+def model_fn(features, labels, is_training=True):
     with tf.variable_scope("dynamic_rnn",
                            use_resource=True,
                            reuse=tf.AUTO_REUSE):
@@ -47,6 +47,6 @@ def input_fn():
     y = tf.placeholder(tf.float32, shape=yshape, name='y')
     return x, y
 
-def test_model():
-    run(model_fn, input_fn, "dynamic_rnn", True)
 
+def test_model():
+    run(model_fn, input_fn, "dynamic_rnn", is_training=True)

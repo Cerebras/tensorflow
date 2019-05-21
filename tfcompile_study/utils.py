@@ -61,7 +61,7 @@ def run(model_fn, input_fn, file_name, is_training=True, only_gen=False):
         is_training: For operations like batchnorm, to capture which variables are being trained and which ones won't be
     """
     x,y = input_fn()
-    out = model_fn(x,y)
+    out = model_fn(x,y, is_training)
     trainable_vars_names =[var.op.name for var in tf.trainable_variables(scope=None)]
     graph = out.graph.as_graph_def(add_shapes=True)
     file_graph = "graph_" + file_name + ".pbtxt"
@@ -72,7 +72,8 @@ def run(model_fn, input_fn, file_name, is_training=True, only_gen=False):
     with open(file_config, 'w') as f:
         f.write(str(config))
     if not only_gen:
-        subprocess.run([
+        output=subprocess.run([
         "./../../../bazel-bin/tensorflow/compiler/aot/tfcompile",
         "--graph=" + file_graph, "--config=" + file_config,
         "--cpp_class=mynamespace::MyComputation"])
+        output.check_returncode()

@@ -12,9 +12,9 @@ BATCH_SIZE = 64
 HEIGHT = 28
 WIDTH = 28
 CHANNELS = 3
-TRAINING = True
 
-def model_fn(features, labels):
+
+def model_fn(features, labels, is_training=True):
     with tf.variable_scope("conv_fc", use_resource=True):
         net = tf.keras.layers.Conv2D(filters=4,
                                      kernel_size=[2, 2],
@@ -24,7 +24,7 @@ def model_fn(features, labels):
             net = tf.keras.layers.Dense(units=HIDDEN_SIZE,
                                         name="hidden" + str(i),
                                         activation=tf.nn.relu)(net)
-            net = tf.layers.batch_normalization(net, training=TRAINING)
+            net = tf.layers.batch_normalization(net, training=is_training)
         logits = tf.keras.layers.Dense(units=LABELS)(net)
         cross_entropy = tf.reduce_mean(
             tf.nn.softmax_cross_entropy_with_logits(labels=labels,
@@ -43,5 +43,6 @@ def input_fn():
     y = tf.placeholder(tf.float32, [BATCH_SIZE, LABELS], name='y')
     return x, y
 
+
 def test_model():
-    run(model_fn, input_fn, "conv_fc_batchnorm_adam", is_training=TRAINING)
+    run(model_fn, input_fn, "conv_fc_batchnorm_adam", is_training=True)

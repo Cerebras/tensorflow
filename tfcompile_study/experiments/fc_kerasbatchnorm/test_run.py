@@ -10,10 +10,9 @@ HIDDEN_SIZE = 256 if HIDDEN_LAYERS > 1 else LABELS
 LR = 0.01
 BATCH_SIZE = 64
 FEAT_DIM = 784
-TRAINING = True
 
 
-def model_fn(features, labels):
+def model_fn(features, labels, is_training=True):
     with tf.variable_scope("fc", use_resource=True):
         net = features
         updates = []
@@ -22,7 +21,7 @@ def model_fn(features, labels):
                                         name="hidden" + str(i),
                                         activation=tf.nn.relu)(net)
             m = tf.keras.layers.BatchNormalization()
-            net = m(net, training=TRAINING)
+            net = m(net, training=is_training)
             updates += m.updates
         logits = tf.keras.layers.Dense(units=LABELS)(net)
         cross_entropy = tf.reduce_mean(
@@ -42,6 +41,10 @@ def input_fn():
     return x, y
 
 
-def test_model():
-    run(model_fn, input_fn, "fc_keras_batchnorm", TRAINING)
-
+@pytest.mark.parametrize("is_training", [True, False])
+def test_model(is_training):
+    tf.reset_default_graph()
+    run(model_fn,
+        input_fn,
+        "fc_keras_batchnorm" + str(is_training),
+        is_training=is_training)
