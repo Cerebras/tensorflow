@@ -52,7 +52,7 @@ In our evaluation of `tfcompile`, we ran 15 tests with different common neural n
 **To replicate the experiments:**
   1. **TensorFlow Version:**  
      * Based off of the TensorFlow r1.14 branch.
-     * Branch used can be found [here](https://github.com/Cerebras/tensorflow/tree/vishal/tf14_tfcompile/).
+     * Branch used can be found [here](https://github.com/Cerebras/tensorflow/tree/vishal/tfcompile_pr1.14/).
      * This tf branch was built using the default settings in `./configure`.
      * The only change we made to the code base is in `tensorflow/compiler/aot/codegen.cc#L774` to support `/` in node names.
        * Originally, it supports names that follow the C++11 Standard naming convention, so this change is to handle variable_scope.
@@ -72,14 +72,14 @@ In our evaluation of `tfcompile`, we ran 15 tests with different common neural n
      ```Bash
      protoc --python_out=/path_to_store_compiled_file --proto_path=/path_to_tensorflow_dir/tensorflow   tensorflow/compiler/tf2xla/tf2xla.proto
      ```
-     * Currently stored [here](https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/tf2xla_pb2.py).
+     * Currently stored [here](https://github.com/Cerebras/tensorflow/blob/vishal/tfcompile_pr1.14/tfcompile_study/tf2xla_pb2.py).
 
   4. **To run tfcompile:**  
      ```Bash
      TF_CPP_MIN_VLOG_LEVEL=3 /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile --graph=graph_model_fn.pbtxt --config=config_model_fn.config.pbtxt --cpp_class="mynamespace::MyComputation"
      ```
-     * Is being called within the `run` function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tf14_tfcompile/tfcompile_study/utils.py#L75).
-     * We create a symlink for tfcompile
+     * Is being called within the `run` function through a subprocess (https://github.com/Cerebras/tensorflow/blob/vishal/tfcompile_pr1.14/tfcompile_study/utils.py#L68).
+     * We created a symlink for tfcompile:
       ```
       cd /bin/
       sudo ln -s /path_to_tensorflow/tensorflow/bazel-bin/tensorflow/compiler/aot/tfcompile tfcompile
