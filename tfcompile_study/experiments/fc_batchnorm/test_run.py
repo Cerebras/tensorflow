@@ -1,6 +1,5 @@
 import tensorflow as tf
 import sys
-sys.path.insert(0, "../../.")
 from utils import run
 import pytest
 

@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-
 import tensorflow as tf
-
 import sys
-sys.path.insert(0, "../../.")
 from utils import run
 import pytest
 from tensorflow.keras.layers import LSTMCell, Dense

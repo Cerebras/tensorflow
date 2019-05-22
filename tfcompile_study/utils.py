@@ -18,33 +18,31 @@ def config_from_graph(input_tensors,
     Returns config proto for tfcompile
     """
     config = Config()
-    num_nodes = len(graph_def.node)
     input_tensor_names = [tensor.op.name for tensor in input_tensors]
     output_tensor_names = [tensor.op.name for tensor in output_tensors]
-    for i in range(num_nodes):
-        if graph_def.node[i].name in input_tensor_names:
-            tensor_id = TensorId(node_name=graph_def.node[i].name)
-            config.feed.add(id=tensor_id,
-                            shape=graph_def.node[i].attr["shape"].shape,
-                            type=graph_def.node[i].attr["dtype"].type)
+    def _shape_type(n):
+        return {
+            "shape": n.attr["shape"].shape,
+            "type": n.attr["dtype"].type
+        }
 
-        if graph_def.node[i].name in output_tensor_names:
-            tensor_id = TensorId(node_name=graph_def.node[i].name)
-            config.fetch.add(id=tensor_id)
+    for node in graph_def.node:
+        if node.name in input_tensor_names:
+            config.feed.add(id=TensorId(node_name=node.name),
+                            **_shape_type(node))
 
-        if graph_def.node[i].op == "VarHandleOp":
-            if graph_def.node[i].name in trainable_vars_names:
-                config.variable.add(
-                    node_name=graph_def.node[i].name,
-                    shape=graph_def.node[i].attr["shape"].shape,
-                    type=graph_def.node[i].attr["dtype"].type,
-                    readonly=False)
-            else:
-                config.variable.add(
-                    node_name=graph_def.node[i].name,
-                    shape=graph_def.node[i].attr["shape"].shape,
-                    type=graph_def.node[i].attr["dtype"].type,
-                    readonly=not is_training)
+        if node.name in output_tensor_names:
+            config.fetch.add(id=TensorId(node_name=node.name))
+
+        if node.op == "VarHandleOp":
+            trainable = node.name in trainable_vars_names
+            read_write = trainable or is_training
+            var_args = {
+                "node_name": node.name,
+                "readonly": not read_write,
+                **_shape_type(node),
+            }
+            config.variable.add(**var_args)
 
     return config
 
@@ -62,7 +60,7 @@ def run(model_fn, input_fn, file_name, is_training=True, only_gen=False):
     """
     x,y = input_fn()
     out = model_fn(x,y, is_training)
-    trainable_vars_names =[var.op.name for var in tf.trainable_variables(scope=None)]
+    trainable_vars_names =[var.op.name for var in tf.trainable_variables()]
     graph = out.graph.as_graph_def(add_shapes=True)
     file_graph = "graph_" + file_name + ".pbtxt"
     with open(file_graph, 'w') as f:
@@ -73,7 +71,7 @@ def run(model_fn, input_fn, file_name, is_training=True, only_gen=False):
         f.write(str(config))
     if not only_gen:
         output=subprocess.run([
-        "./../../../bazel-bin/tensorflow/compiler/aot/tfcompile",
+        "tfcompile",
         "--graph=" + file_graph, "--config=" + file_config,
         "--cpp_class=mynamespace::MyComputation"])
         output.check_returncode()
