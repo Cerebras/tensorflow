@@ -2,11 +2,9 @@ from tf2xla_pb2 import Config, TensorId
 import tensorflow as tf
 import subprocess
 
-def config_from_graph(input_tensors,
-                      output_tensors,
-                      graph_def,
-                      trainable_vars_names,
-                      is_training):
+
+def config_from_graph(input_tensors, output_tensors, graph_def,
+                      trainable_vars_names, is_training):
     """
     Generate config based on graphdef
     Args:
@@ -20,11 +18,9 @@ def config_from_graph(input_tensors,
     config = Config()
     input_tensor_names = [tensor.op.name for tensor in input_tensors]
     output_tensor_names = [tensor.op.name for tensor in output_tensors]
+
     def _shape_type(n):
-        return {
-            "shape": n.attr["shape"].shape,
-            "type": n.attr["dtype"].type
-        }
+        return {"shape": n.attr["shape"].shape, "type": n.attr["dtype"].type}
 
     for node in graph_def.node:
         if node.name in input_tensor_names:
@@ -47,8 +43,7 @@ def config_from_graph(input_tensors,
     return config
 
 
-
-def run(model_fn, input_fn, file_name, is_training=True, only_gen=False):
+def run(model_fn, inputs, file_name, is_training=True, only_gen=False):
     """
     From model_fn and input_fn to generating tfcompile inputs and outputs
     Args:
@@ -58,20 +53,20 @@ def run(model_fn, input_fn, file_name, is_training=True, only_gen=False):
         only_gen: If we want only the inputs to be generated and not the outputs of tfcompile
         is_training: For operations like batchnorm, to capture which variables are being trained and which ones won't be
     """
-    x,y = input_fn()
-    out = model_fn(x,y, is_training)
-    trainable_vars_names =[var.op.name for var in tf.trainable_variables()]
+    out = model_fn(*inputs, is_training)
+    trainable_vars_names = [var.op.name for var in tf.trainable_variables()]
     graph = out.graph.as_graph_def(add_shapes=True)
     file_graph = "graph_" + file_name + ".pbtxt"
     with open(file_graph, 'w') as f:
         f.write(str(graph))
-    config = config_from_graph([x, y], [out], graph, trainable_vars_names, is_training)
+    config = config_from_graph(inputs, [out], graph, trainable_vars_names,
+                               is_training)
     file_config = "config_" + file_name + ".config.pbtxt"
     with open(file_config, 'w') as f:
         f.write(str(config))
     if not only_gen:
-        output=subprocess.run([
-        "tfcompile",
-        "--graph=" + file_graph, "--config=" + file_config,
-        "--cpp_class=mynamespace::MyComputation"])
+        output = subprocess.run([
+            "tfcompile", "--graph=" + file_graph, "--config=" + file_config,
+            "--cpp_class=mynamespace::MyComputation"
+        ])
         output.check_returncode()

@@ -40,12 +40,13 @@ def model_fn(features, labels, is_training=True):
             return tf.identity(loss)
 
 
-def input_fn():
+@pytest.fixture()
+def inputs():
     xshape, yshape = [BATCH_SIZE, SEQ_LENGTH, 1], [BATCH_SIZE, NUM_CLASSES]
     x = tf.placeholder(tf.float32, shape=xshape, name='x')
     y = tf.placeholder(tf.float32, shape=yshape, name='y')
     return x, y
 
 
-def test_model():
-    run(model_fn, input_fn, "dynamic_rnn", is_training=True)
+def test_model(inputs):
+    run(model_fn, inputs, "dynamic_rnn", is_training=True)

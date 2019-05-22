@@ -90,5 +90,5 @@ In our evaluation of `tfcompile`, we ran 15 tests with different common neural n
      1. utils.py - contains config generation script and run script to generate the `graph_def` and the config script from the `model_fn` and the `input_fn`.
      2. tf2xla_pb2.py - compiled protobuf file of `tf2xla.proto` for python import.
      3. experiments - directory with each subdirectory containing a specific model.
-        1. each experiment is a pytest.
-        2. To run the tests, run ```pytest --forked``` from within the experiments directory. The expected output is 3 failed and 12 passed tests.
+        * each experiment is a pytest.
+        * To run the tests, run ```pytest --forked``` from within the experiments directory. The expected output is 3 failed and 12 passed tests.

@@ -31,12 +31,13 @@ def model_fn(inputs, labels, is_training=True):
         return tf.identity(loss)
 
 
-def input_fn():
+@pytest.fixture()
+def inputs():
     inputs_holder = tf.placeholder(tf.float32,
                                    shape=[BATCH_SIZE, MAX_SEQ_LEN, 1])
     labels_holder = tf.placeholder(tf.int32, shape=[BATCH_SIZE, MAX_SEQ_LEN])
     return inputs_holder, labels_holder
 
 
-def test_model():
-    run(model_fn, input_fn, "rnn_seq_length", is_training=True)
+def test_model(inputs):
+    run(model_fn, inputs, "rnn_seq_length", is_training=True)

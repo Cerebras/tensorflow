@@ -31,12 +31,12 @@ def model_fn(features, labels, is_training=True):
             return tf.identity(cross_entropy, name="results")
 
 
-def input_fn():
+@pytest.fixture()
+def inputs():
     x = tf.placeholder(tf.float32, [BATCH_SIZE, FEAT_DIM], name='x')
     y = tf.placeholder(tf.float32, [BATCH_SIZE, LABELS], name='y')
     return x, y
 
 
-def test_model():
-    tf.reset_default_graph()
-    run(model_fn, input_fn, "fc_batchnorm_adam", is_training=True)
+def test_model(inputs):
+    run(model_fn, inputs, "fc_batchnorm_adam", is_training=True)

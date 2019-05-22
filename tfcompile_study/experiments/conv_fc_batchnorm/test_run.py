@@ -36,7 +36,8 @@ def model_fn(features, labels, is_training=True):
             return tf.identity(cross_entropy, name="results")
 
 
-def input_fn():
+@pytest.fixture()
+def inputs():
     x = tf.placeholder(tf.float32, [BATCH_SIZE, HEIGHT, WIDTH, CHANNELS],
                        name='x')
     y = tf.placeholder(tf.float32, [BATCH_SIZE, LABELS], name='y')
@@ -44,9 +45,8 @@ def input_fn():
 
 
 @pytest.mark.parametrize("is_training", [True, False])
-def test_model(is_training):
-    tf.reset_default_graph()
+def test_model(inputs, is_training):
     run(model_fn,
-        input_fn,
+        inputs,
         "conv_fc_batchnorm" + str(is_training),
         is_training=is_training)
