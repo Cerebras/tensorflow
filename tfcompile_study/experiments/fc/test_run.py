@@ -1,5 +1,4 @@
 import tensorflow as tf
-import sys
 from utils import run
 import pytest
 
