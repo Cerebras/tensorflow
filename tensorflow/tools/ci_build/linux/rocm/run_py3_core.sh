@@ -82,6 +82,10 @@ bazel test --test_sharding_strategy=disabled --config=rocm --test_tag_filters=-n
     -//tensorflow/python/eager:backprop_test_gpu \
     -//tensorflow/python/kernel_tests:qr_op_test \
     -//tensorflow/python/kernel_tests:qr_op_test_gpu \
+    -//tensorflow/python/kernel_tests:map_stage_op_test \
+    -//tensorflow/python/kernel_tests:map_stage_op_test_gpu \
+    -//tensorflow/python/kernel_tests:stage_op_test \
+    -//tensorflow/python/kernel_tests:stage_op_test_gpu \
     -//tensorflow/python/kernel_tests/signal:dct_ops_test \
     -//tensorflow/python/kernel_tests/signal:fft_ops_test \
     -//tensorflow/python/kernel_tests/signal:spectral_ops_test \
