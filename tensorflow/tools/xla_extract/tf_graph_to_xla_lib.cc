@@ -100,7 +100,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   s = GraphExecutionState::MakeForBaseGraph(&gdef, ges_options,
                                             &execution_state);
   if (!s.ok())
-    LOG(FATAL) << "execution state creation failed: " << s.error_message();
+    LOG(ERROR) << "execution state creation failed: " << s.error_message();
   BuildGraphOptions bg_options;
   bg_options.use_function_convention = true;
   std::istringstream fetch_stream(fetch);
@@ -112,7 +112,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   }
   std::unique_ptr<ClientGraph> client_graph;
   s = execution_state->BuildGraph(bg_options, &client_graph);
-  if (!s.ok()) LOG(FATAL) << "build graph failed " << s.error_message();
+  if (!s.ok()) LOG(ERROR) << "build graph failed " << s.error_message();
 
   // Usually there is only one cluster, but for some graphs (e.g. LSTM) there
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
@@ -143,7 +143,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     LOG(INFO) << "cluster not found, using " << fdef.signature().name()
               << " instead\n";
   }
+
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
+
   // to make sure xla_args matches fdef
 
   LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
@@ -160,7 +162,20 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   std::vector<XlaCompiler::Argument> new_xla_args(fdef_ground_truth.size());
   const std::string kReadVarOpString = "readvariableop";
   const std::string kIdentityString = "identity";
+
+  // additional case check
+  bool match_flag = false;
+  bool readvarop_flag = false;
+  for (int j = 0; j < fdef_ground_truth.size(); j++) {
+    std::size_t found = fdef_ground_truth[j].name().find(kReadVarOpString);
+    if(found != std::string::npos){
+      readvarop_flag = true;
+    }
+  }
+  //
+
   for (int i = 0; i < xla_args.size(); i++) {
+    match_flag = false;
     std::string xla_arg_name = xla_args[i].name;
     xla_arg_name = str_util::Lowercase(xla_arg_name);
     xla_arg_name = str_util::ArgDefCase(xla_arg_name);
@@ -170,13 +185,29 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     for (int j = 0; j < fdef_ground_truth.size(); j++) {
       if (xla_arg_name == fdef_ground_truth[j].name()) {
         new_xla_args[j] = xla_args[i];
+        match_flag = true;
+        break;
       }
     }
+    // additional case check
+    if(!match_flag && readvarop_flag){
+        std::string xla_arg_name = xla_args[i].name;
+    xla_arg_name = str_util::Lowercase(xla_arg_name);
+    xla_arg_name = str_util::ArgDefCase(xla_arg_name);
+    xla_arg_name = xla_arg_name + "_0_arg";
+    for (int j = 0; j < fdef_ground_truth.size(); j++) {
+      if (xla_arg_name == fdef_ground_truth[j].name()) {
+        new_xla_args[j] = xla_args[i];
+        break;
+      }
+    }
+    }
+    //
   }
 
   for (int l = 0; l < fdef_ground_truth.size(); l++) {
     if (new_xla_args[l].name == "") {
-      LOG(FATAL) << "name mismatch error for " << fdef_ground_truth[l].name();
+      LOG(ERROR) << "name mismatch error for " << fdef_ground_truth[l].name();
     }
   }
 
@@ -201,7 +232,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
-    if (!s.ok()) LOG(FATAL) << "Couldn't compile to xla: " << s.error_message();
+    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
 
     LOG(INFO) << "Done Compiling";
     hmod.CopyFrom(result.computation->proto());
@@ -243,7 +274,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     s = pipeline.Run(hlo_module.get()).status();
 
     if (!s.ok())
-      LOG(FATAL) << "Couldn't Run HloOptimization: " << s.error_message();
+      LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
 
     LOG(INFO) << "Done HLO Optimization\n";
     hmod = hlo_module.get()->ToProto();
