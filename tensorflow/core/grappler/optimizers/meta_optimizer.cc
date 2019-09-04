@@ -484,6 +484,28 @@ Status MetaOptimizer::Optimize(Cluster* cluster, const GrapplerItem& item,
     }
   }
 
+  // Find functions that are formed by XLA and will be compiled later. We do it
+  // by looking for a function attribute in XlaLaunch ops. Grappler rewrites
+  // potentially can add nodes that are not supported by XLA, so we choose to
+  // skip such functions when we optimize function library.
+  absl::flat_hash_set<string> xla_compiled_functions;
+  using NodeDefs = protobuf::RepeatedPtrField<NodeDef>;
+  const auto find_xla_compiled_functions = [&](const NodeDefs& nodes) -> void {
+    NameAttrList function;
+    for (const NodeDef& node : nodes) {
+      if (!IsXlaLaunch(node)) continue;
+      if (!GetNodeAttr(node, "function", &function).ok()) continue;
+      xla_compiled_functions.insert(function.name());
+    }
+  };
+
+  // XlaLaunch ops inside the main graph ...
+  find_xla_compiled_functions(optimized_graph->node());
+  // ... and inside the function library.
+  for (const FunctionDef& function : optimized_graph->library().function()) {
+    find_xla_compiled_functions(function.node_def());
+  }
+
   // Optimize each function only once.
   absl::flat_hash_set<string> optimized_funcs;
   bool optimize_function_library = true;
@@ -500,7 +522,9 @@ Status MetaOptimizer::Optimize(Cluster* cluster, const GrapplerItem& item,
       if (!flib.Contains(func_name)) continue;
 
       // Skip already optimized functions.
-      if (optimized_funcs.find(func_name) != optimized_funcs.end()) continue;
+      if (optimized_funcs.contains(func_name)) continue;
+      // Skip functions that will be compiled by XLA.
+      if (xla_compiled_functions.contains(func_name)) continue;
 
       // Skip parametrized functions (function type or body is defined only at
       // function call time by caller node attributes).

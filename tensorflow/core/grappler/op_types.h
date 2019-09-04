@@ -167,6 +167,7 @@ bool IsTruncateDiv(const NodeDef& node);
 bool IsTruncateMod(const NodeDef& node);
 bool IsUnpack(const NodeDef& node);
 bool IsVariable(const NodeDef& node);
+bool IsXlaLaunch(const NodeDef& node);
 bool IsZeta(const NodeDef& node);
 
 // Return true if the op is an aggregation (e.g. Add, AddN).
