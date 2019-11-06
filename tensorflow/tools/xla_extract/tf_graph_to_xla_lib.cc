@@ -104,6 +104,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // XLA_LOG == 0, no prints
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
+
   char* value = std::getenv("XLA_LOG");
   int xla_log = value ? atoi(value) : NO_LOG;
   InitializeDevices(sess_options, &device_mgr, &dev_set);
