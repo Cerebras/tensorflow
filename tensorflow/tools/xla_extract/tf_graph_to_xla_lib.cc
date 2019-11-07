@@ -91,7 +91,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // XLA_LOG == 0, no prints
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
-  int xla_log = atoi(std::getenv("XLA_LOG"));
+  char* value = std::getenv("XLA_LOG");
+  char default_val = '0';
+  int xla_log = atoi(value ? value : &default_val);
   InitializeDevices(sess_options, &device_mgr, &dev_set);
 
   // Local copy for modification
@@ -189,6 +191,10 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   }
 
   xla_args = new_xla_args;
+  // debugging temovar
+  for(int f=0; f<xla_args.size();f++){
+    std::cout<<xla_args[f].name<<"\n";
+  }
   // we no longer need to do the rotation
   if(xla_log >= 2){
     LOG(INFO) << "xla args in correct order and matches fdef\n";
