@@ -19,6 +19,8 @@ limitations under the License.
 
 #include "tensorflow/compiler/xla/test.h"
 
+typedef long long int64;
+
 namespace xla {
 namespace {
 
