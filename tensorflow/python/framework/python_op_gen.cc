@@ -391,8 +391,13 @@ void GenEagerPythonOp::HandleGraphMode(const string& function_setup) {
       for (int i = 0; i < op_def_.attr_size(); ++i) {
         if (i > 0) strings::StrAppend(&attr_values, ", ");
         const auto& attr_name(op_def_.attr(i).name());
-        strings::StrAppend(&attr_values, "\"", attr_name, "\", _op.get_attr(\"",
-                           attr_name, "\")");
+        if (op_def_.attr(i).type() == "type") {
+          strings::StrAppend(&attr_values, "\"", attr_name,
+                             "\", _op._get_attr_type(\"", attr_name, "\")");
+        } else {
+          strings::StrAppend(&attr_values, "\"", attr_name,
+                             "\", _op.get_attr(\"", attr_name, "\")");
+        }
       }
       strings::StrAppend(&attr_values, ")");
       strings::StrAppend(
@@ -627,8 +632,10 @@ void GenEagerPythonOp::AddEagerFunctionTeardown(
       // For list outputs, convert the right subrange of _result into a list.
       Unflatten(indentation, output_sizes, "_result", &result_);
       // Convert to a named tuple.
-      strings::StrAppend(&result_, indentation, "_result = _", op_def_.name(),
-                         "Output._make(_result)\n");
+      strings::StrAppend(
+          &result_, indentation, "_result = _",
+          python_op_gen_internal::AvoidPythonReserved(op_def_.name()),
+          "Output._make(_result)\n");
     }
   } else {
     strings::StrAppend(&result_, indentation, "_result = None\n");
@@ -755,8 +762,9 @@ void GenEagerPythonOp::AddEagerFastPathExecute() {
       "\n");
 
   if (op_def_.output_arg_size() > 1) {
-    const string output_tuple_name =
-        strings::StrCat("_", op_def_.name(), "Output");
+    const string output_tuple_name = strings::StrCat(
+        "_", python_op_gen_internal::AvoidPythonReserved(op_def_.name()),
+        "Output");
     strings::StrAppend(&result_, "      ", "_result = ", output_tuple_name,
                        "._make(_result)\n");
   }
