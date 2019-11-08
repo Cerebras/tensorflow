@@ -18,6 +18,10 @@
 #include "tensorflow/compiler/xla/service/interpreter/compiler.h"
 
 #include <utility>
+
+#include "tensorflow/core/protobuf/config.pb.h"
+#include "tensorflow/core/protobuf/rewriter_config.pb.h"
+
 #include "tensorflow/compiler/xla/service/algebraic_simplifier.h"
 #include "tensorflow/compiler/xla/service/call_inliner.h"
 #include "tensorflow/compiler/xla/service/despecializer.h"
@@ -88,6 +92,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch) {
   Status s;
   SessionOptions sess_options;
+  sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
   DeviceMgr* device_mgr;
   DeviceSet dev_set;
   // XLA_LOG == 0, no prints
@@ -126,34 +131,31 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
   auto fdef_iter =
-      std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+      std::find_if(fdef_lib.mutable_function()->rbegin(), fdef_lib.mutable_function()->rend(),
                    [](const FunctionDef& f_) -> bool {
                      return (f_.signature().name().find("cluster_") == 0 &&
                              f_.signature().name().substr(
                                  f_.signature().name().length() - 2) == "_0");
                    });
 
-  FunctionDef fdef;
-
-  if (fdef_iter == fdef_lib.function().rend()) {
+  if (fdef_iter == fdef_lib.mutable_function()->rend()) {
     fdef_iter =
-        std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+        std::find_if(fdef_lib.mutable_function()->rbegin(), fdef_lib.mutable_function()->rend(),
                      [](const FunctionDef& f_) -> bool {
                        return (f_.signature().name().find("cluster_") == 0);
                      });
   }
 
-  if (fdef_iter != fdef_lib.function().rend()) {
-    fdef = *fdef_iter;
-  } else {
-    fdef = *fdef_lib.function().begin();
+  if (fdef_iter == fdef_lib.mutable_function()->rend()) {
+    fdef_iter = fdef_lib.mutable_function()->rend()-1;
+    FunctionDef temp_fdef = *fdef_iter;
     if(xla_log >= 2){
-      LOG(INFO) << "cluster not found, using " << fdef.signature().name()
+      LOG(INFO) << "cluster not found, using " << temp_fdef.signature().name()
                 << " instead\n";
     }
   }
-
-  auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
+  FunctionDef& fdef = *fdef_iter;
+  std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
   if(xla_log >= 2){
@@ -223,10 +225,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   }
 
   xla_args = new_xla_args;
-  // debugging temovar
-  for(int f=0; f<xla_args.size();f++){
-    std::cout<<xla_args[f].name<<"\n";
-  }
   // we no longer need to do the rotation
   if(xla_log >= 2){
     LOG(INFO) << "xla args in correct order and matches fdef\n";
@@ -248,6 +246,10 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
+<<<<<<< HEAD
+=======
+    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
+>>>>>>> fixing tmp var issue, cleaned up and moved some to be reference instead of value
 
     if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
     if(xla_log >= 2){
