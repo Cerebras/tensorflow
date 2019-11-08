@@ -1,9 +1,43 @@
+# Release 1.14.1
+
+## Bug Fixes and Other Changes
+
+* Adds option for introducing slack in the pipeline to reduce CPU contention, via `options = tf.data.Options(); options.experimental_slack = True; dataset = dataset.with_options(options)`.
+* `ResourceVariable` and `Variable` no longer accepts `constraint` in the constructor, nor expose it as a `@property`.
+* Enhanced graphviz output.
+* Fix issue where callbacks do not log values in eager mode when a deferred build model is used.
+* Replace contrib references with `tf.estimator.experimental.*` for APIs in `early_stopping.py`.
+* Delete unused lookup table code.
+* Clarify which model is being initialized.
+* `parallel_for.pfor`: add converters for `Softmax`, `LogSoftmax`, `IsNaN`, `All`, `Any`, `MatrixSetDiag`, `LowerTriangularSolve`, `Cholesky`, `BroadcastTo`, `LogMatrixDeterminant`, `MatrixBandPart`, `OneHot`, `LowerBound`, and `UpperBound`.
+* Add ragged tensor support to `tf.squeeze`.
+* Allow `LinearOperator.solve` to take a `LinearOperator`.
+* Allow all dtypes for `LinearOperatorCirculant`.
+* Add `LinearOperatorHouseholder`.
+* Introduce `MaxParallelism` method.
+* Added `key` and `skip` methods to `random.experimental.Generator`.
+* Update `RaggedTensors` to support int32 `row_splits`.
+* Add `TensorSpec` support for `CompositeTensors`.
+* Add environment variable `TF_CUDNN_DETERMINISTIC`. Setting to "true" or "1" forces the selection of deterministic cuDNN convolution and max-pooling algorithms. When this is enabled, the algorithm selection procedure itself is also deterministic. This change was already present in version 1.14.0, but this note was missing from the version 1.14.0 release notes tagged `v1.14.0`.
+* The `precision_mode` argument to `TrtGraphConverter` is now case insensitive.
+* Auto Mixed-Precision graph optimizer simplifies converting models to float16 for acceleration on Volta and Turing Tensor Cores. This feature can be enabled by wrapping an optimizer class with `tf.train.experimental.enable_mixed_precision_graph_rewrite()`.
+* Fix potential security vulnerability where decoding variant tensors from proto could result in heap out of bounds memory access.
+
 # Release 1.14.0
 
 ## Major Features and Improvements
 
 * This is the first 1.x release containing the compat.v2 module. This module is required to allow libraries to publish code which works in both 1.x and 2.x. After this release, no backwards incompatible changes are allowed in the 2.0 Python API.
 * Turn on MKL-DNN contraction kernels by default. MKL-DNN dynamically dispatches the best kernel implementation based on CPU vector architecture. To disable them, build with --define=tensorflow_mkldnn_contraction_kernel=0.
+* Non-Windows system libraries are now versioned. This should be a no-op for most users as it affects only system package maintainers or those building extensions to TensorFlow:
+  * Python wheels (Pip packages) contain one library file.
+    * Linux: `libtensorflow_framework.so.1`
+    * MacOS: `libtensorflow_framework.1.dylib`
+  * Our `libtensorflow` tarball archives contain the `libtensorflow` library and two symlinks. MacOS `.dylib` libraries are the same, but match MacOS library naming requirements (i.e. `libtensorflow.1.dylib`):
+    * `libtensorflow.so.1.14.0`, the main library
+    * `libtensorflow.so.1`, symlinked to the main library
+    * `libtensorflow.so`, symlinked to `.so.1`
+* Auto Mixed-Precision graph optimizer simplifies converting models to float16 for acceleration on Volta and Turing Tensor Cores. This feature can be enabled by wrapping an optimizer class with `tf.train.experimental.enable_mixed_precision_graph_rewrite()`.
 
 ## Behavioral changes
 
@@ -11,7 +45,6 @@
 * Wraps losses passed to the `compile` API (strings and v1 losses) which are not instances of v2 `Loss` class in `LossWrapper` class. => All losses will now use `SUM_OVER_BATCH_SIZE` reduction as default.
 * Disable `run_eagerly` and distribution strategy if there are symbolic tensors added to the model using `add_metric` or `add_loss`.
 * tf.linspace(start, stop, num) now always uses "stop" as last value (for num > 1)
-* `ResourceVariable` and `Variable` no longer accepts `constraint` in the constructor, nor expose it as a @property.
 * The behavior of tf.gather is now correct when axis=None and batch_dims<0.
 * Only create a GCS directory object if the object does not already exist.
 * In `map_vectorization` optimization, reduce the degree of parallelism in the vectorized map node.
@@ -25,6 +58,7 @@
 ## Bug Fixes and Other Changes
 * Documentation
 * Deprecations and Symbol renames.
+  * The GPU configuration env parameter `TF_CUDA_HOST_MEM_LIMIT_IN_MB` has been changed to `TF_GPU_HOST_MEM_LIMIT_IN_MB`.
   * Remove unused StringViewVariantWrapper
   * Delete unused Fingerprint64Map op registration
   * SignatureDef util functions have been deprecated.
@@ -57,6 +91,7 @@
   * Add CompositeTensor base class.
   * Add tf.linalg.tridiagonal_solve op.
   * Add opkernel templates for common table operations.
+  * Added GPU implementation of tf.linalg.tridiagonal_solve.
   * Added support for TFLite in TensorFlow 2.0.
   * Adds summary trace API for collecting graph and profile information.
   * Add batch_dims argument to tf.gather.
@@ -88,6 +123,7 @@
   * Post-training quantization tool supports quantizing weights shared by multiple operations. The models made with versions of this tool will use INT8 types for weights and will only be executable interpreters from this version onwards.
   * Malformed gif images could result in an access out of bounds in the color palette of the frame. This has been fixed now
   * image.resize now considers proper pixel centers and has new kernels (incl. anti-aliasing).
+  * Add environment variable `TF_CUDNN_DETERMINISTIC`. Setting to "true" or "1" forces the selection of deterministic cuDNN convolution and max-pooling algorithms. When this is enabled, the algorithm selection procedure itself is also deterministic.
 * Performance
   * Turn on MKL-DNN contraction kernels by default. MKL-DNN dynamically dispatches the best kernel implementation based on CPU vector architecture. To disable them, build with --define=tensorflow_mkldnn_contraction_kernel=0.
   * Support for multi-host ncclAllReduce in Distribution Strategy.
@@ -121,16 +157,23 @@
   * TF code now resides in `tensorflow_core` and `tensorflow` is just a virtual pip package. No code changes are needed for projects using TensorFlow, the change is transparent
 * XLA
   * XLA HLO graphs can be inspected with interactive_graphviz tool now.
+  * Adds Philox support to new stateful RNG's XLA path.
 * Estimator
-  * Use tf.compat.v1.estimator.inputs instead of tf.estimator.inputs
-  * Replace contrib references with tf.estimator.experimental.* for apis in early_stopping.py
+  * Use `tf.compat.v1.estimator.inputs` instead of `tf.estimator.inputs`
+  * Replace `contrib` references with `tf.estimator.experimental.*` for APIs in `early_stopping.py`
+  * Determining the “correct” value of the `--iterations_per_loop` for TPUEstimator or DistributionStrategy continues to be a challenge for our users. We propose dynamically tuning the `--iterations_per_loop` variable, specifically for using TPUEstimator in training mode, based on a user target TPU execution time. Users might specify a value such as: `--iterations_per_loop=300s`, which will result in roughly 300 seconds being spent on the TPU between host side operations.
+* TensorRT
+  * Migrate TensorRT conversion sources from contrib to compiler directory in preparation for TF 2.0.
+  * Add additional, user friendly `TrtGraphConverter` API for TensorRT conversion.
+  * Expand support for TensorFlow operators in TensorRT conversion (e.g. `Gather`, `Slice`, `Pack`, `Unpack`, `ArgMin`, `ArgMax`, `DepthSpaceShuffle`). 
+  * Support TensorFlow operator `CombinedNonMaxSuppression` in TensorRT conversion which significantly accelerates object detection models. Requires recompilation of TensorFlow 1.14 with TensorRT 5.1.
 
 
 ## Thanks to our Contributors
 
 This release contains contributions from many people at Google, as well as:
 
-1e100, 4d55397500, a6802739, abenmao, Adam Weiss, Ag Ramesh, Alan Du, Albin Joy, Alex, Aman Patel, Amit, Amit Kumar Jaiswal, Amit Srivastava, Andreas Eberle, Andy Craze, Anthony Platanios, Armen Poghosov, armenpoghosov, arp95, Arpit Shah, Ashwin Ramaswami, Aurelien Geron, AuréLien Geron, aweers, awesomealex1, Ayush Agrawal, Ben Barsdell, Bharat Raghunathan, Bhavani Subramanian, blairhan, BléNesi Attila, Brandon Carter, candy.dc, Chao Liu, chenchc, chie8842, Christian Hansen, Christian Sigg, Clayne Robison, crafet, csukuangfj, ctiijima, Dan Jarvis, Dan Lazewatsky, Daniel Ingram, Daniel Salvadori, Dave Airlie, David Norman, Dayananda V, Dayananda-V, delock, Denis Khalikov, Deven Desai, Dheeraj Rajaram Reddy, dmitrievanthony, Donovan Ong, Drew Szurko, Duncan Riach, Dustin Neighly, Edward Forgacs, EFanZh, Fei Hu, Felix Lemke, Filip Matzner, fo40225, frreiss, Gautam, gehring, Geoffrey Irving, Grzegorz George Pawelczak, Grzegorz Pawelczak, Gyoung-Yoon Ryoo, HanGuo97, Hanton Yang, Hari Shankar, hehongliang, Heungsub Lee, Hoeseong Kim, I-Hong Jhuo, Ilango R, Innovimax, Irene Dea, Jacky Ko, Jakub Lipinski, Jason Zaman, jcf94, Jeffrey Poznanovic, Jens Elofsson, Jeroen BéDorf, Jia Qingtong, Jiankang, Joe Q, Joe Quadrino, Joeran Beel, Jonas Rauber, Jonathan, Jonathan Kyl, Joppe Geluykens, Joseph Friedman, jtressle, jwu, K Yasaswi Sri Chandra Gandhi, K. Hodges, Kaixi Hou, Karl Lessard, Karl Weinmeister, Karthik Muthuraman, Kashif Rasul, KDR, Keno Fischer, Kevin Mader, kjopek, Koan-Sin Tan, kouml, ktaebum, Lakshay Tokas, Laurent Le Brun, Letian Kang, Li, Guizi, Loo Rong Jie, Lucas Hendren, Lukas Geiger, Luke Han, luxupu, Ma, Guokai, Mahmoud Abuzaina, Mandar Deshpande, manhyuk, Marco Gaido, Marek Drozdowski, Mark Collier, Mark Ryan, mars20, Mateusz Chudyk, Matt Conley, MattConley, mbhuiyan, mdfaijul, Melissa Grueter, Michael KäUfl, MickaëL Schoentgen, Miguel Morin, Mihail Salnikov, Mike Arpaia, Mike Holcomb, monklof, Moses Marin, Mshr-H, nammbash, Natalia Gimelshein, Nayana-Ibm, neargye, Neeraj Pradhan, Nehal J Wani, Nick, Niels Ole Salscheider, Niranjan Hasabnis, nlewycky, Nuka-137, Nutti, olicht, P Sudeepam, Palmer Lao, Pan Daoxin, Pariksheet Pinjari, Pavel Samolysov, PENGWA, Pooya Davoodi, R S Nikhil Krishna, Rohit Gupta, Roman Soldatow, rthadur, Ruizhe, Ryan Jiang, Samantha Andow, Sami Kama, Sana-Damani, Saurabh Deoras, sdamani, seanshpark, Sebastien Iooss, Serv-Inc, Shahzad Lone, Shashank Gupta, Shashi, shashvat, shashvatshahi1998, Siju, Siju Samuel, Snease-Abq, Spencer Schaber, sremedios, srinivasan.narayanamoorthy, Steve Lang, Steve Nesae, Sumesh Udayakumaran, Supriya Rao, Taylor Jakobson, Taylor Thornton, Ted Chang, ThisIsPIRI, Thomas Deegan, Thomas Hagebols, tianyapiaozi, Tim Zaman, tomguluson92, Tongxuan Liu, TungJerry, v1incent, Vagif, vcarpani, Vikram Tiwari, Vishwak Srinivasan, Vitor-Alves, wangsiyu, wateryzephyr, WeberXie, WeijieSun, Wen-Heng (Jack) Chung, wenxizhu, Will Battel, William D. Irons, wyzhao, Xin, Yasuhiro Matsumoto, ymodak, Yong Tang, Younes Khoudli, Yuan Lin, Yves-Noel Weweler, Zantares, zjjott, 卜居, 王振华 (Wang Zhenhua), 黄鑫
+1e100, 4d55397500, a6802739, abenmao, Adam Richter, Adam Weiss, Ag Ramesh, Alan Du, Albin Joy, Alex, Aman Patel, Amit, Amit Kumar Jaiswal, Amit Srivastava, Andreas Eberle, Andy Craze, Anthony Hsu, Anthony Platanios, Anuj Rawat, Armen Poghosov, armenpoghosov, arp95, Arpit Shah, Ashwin Ramaswami, Augustina Ragwitz, Aurelien Geron, AuréLien Geron, avasid, aweers, awesomealex1, Ayush Agrawal, Bayberry Z, Ben Barsdell, Bharat Raghunathan, Bhavani Subramanian, Bin Fan, blairhan, BléNesi Attila, Bodin-E, Brandon Carter, candy.dc, Cheng Chang, Chao Liu, chenchc, chie8842, Christian Hansen, Christian Sigg,  Christoph Boeddeker, Clayne Robison, crafet, csukuangfj, ctiijima, Dan Jarvis, Dan Lazewatsky, Daniel Ingram, Daniel Rasmussen, Daniel Salvadori, Dave Airlie, David Norman, Dayananda V, Dayananda-V, delock, Denis Khalikov, Deven Desai, Dheeraj Rajaram Reddy, dmitrievanthony, Donovan Ong, Drew Szurko, Duncan Riach, Dustin Neighly, Edward Forgacs, EFanZh, Evgeniy Polyakov, Fangjun Kuang, Federico Martinez, Fei Hu, Felix Lemke, Filip Matzner, fo40225, Fred Reiss, Gautam, gehring, Geoffrey Irving, George Sterpu, Grzegorz George Pawelczak, Grzegorz Pawelczak, Gurpreet Singh, Gyoung-Yoon Ryoo, HanGuo97, Hanton Yang, Hari Shankar, hehongliang, Heungsub Lee, Hoeseong Kim, Huan Li (李卓桓), I-Hong Jhuo, Ilango R, Innovimax, Irene Dea, Jacky Ko, Jakub Lipinski, Jason Zaman, jcf94, Jeffrey Poznanovic, Jens Elofsson, Jeroen BéDorf, jhalakp, Jia Qingtong, Jiankang, Joe Q, Joe Quadrino, Joeran Beel, Jonas Rauber, Jonathan, Jonathan Kyl, Joppe Geluykens, Joseph Friedman, jtressle, jwu, K Yasaswi Sri Chandra Gandhi, K. Hodges, Kaixi Hou, Karl Lessard, Karl Weinmeister, Karthik Muthuraman, Kashif Rasul, KDR, Keno Fischer, Kevin Mader, Kilaru Yasaswi Sri Chandra Gandhi, kjopek, Koan-Sin Tan, kouml, ktaebum, Lakshay Tokas, Laurent Le Brun, Letian Kang, Li, Guizi, Loo Rong Jie, Lucas Hendren, Lukas Geiger, Luke Han, luxupu, lvli, Ma, Guokai, Mahmoud Abuzaina, Maksym Kysylov, Mandar Deshpande, manhyuk, Marco Gaido, Marek Drozdowski, Mark Collier, Mark Ryan, mars20, Mateusz Chudyk, Matt Conley, MattConley, mbhuiyan, mdfaijul, Melissa Grueter, Michael KäUfl, MickaëL Schoentgen, Miguel Morin, Mihail Salnikov, Mikalai Drabovich, Mike Arpaia, Mike Holcomb, monklof, Moses Marin, Mr. Metal, Mshr-H, nammbash, Natalia Gimelshein, Nathan Luehr, Nayana-Ibm, neargye, Neeraj Pradhan, Nehal J Wani, Nick, Nick Lewycky, Niels Ole Salscheider, Niranjan Hasabnis, nlewycky, Nuka-137, Nutti, olicht, omeir1, P Sudeepam, Palmer Lao, Pan Daoxin, Pariksheet Pinjari, Pasquale Minervini, Pavel Akhtyamov, Pavel Samolysov, PENGWA, Philipp Jund, Pooya Davoodi, Pranav Marathe, R S Nikhil Krishna, Rohit Gupta, Roland Zimmermann, Roman Soldatow, rthadur, Ruizhe, Ryan Jiang, saishruthi, Samantha Andow, Sami Kama, Sana-Damani, Saurabh Deoras, sdamani, Sean Morgan, seanshpark, Sebastien Iooss, Sergii Khomenko, Serv-Inc, Shahzad Lone, Shashank Gupta, Shashi, shashvat, Shashvat Chand Shahi, Siju, Siju Samuel, Snease-Abq, Spencer Schaber, sremedios, srinivasan.narayanamoorthy, Steve Lang, Steve Nesae, Subin, Sumesh Udayakumaran, sunway513, Supriya Rao, sxwang, Takeo Sawada, Taylor Jakobson, Taylor Thornton, Ted Chang, ThisIsPIRI, Thomas Deegan, Thomas Hagebols, tianyapiaozi, Tim Zaman, tomguluson92, Tongxuan Liu, Trent Lo, TungJerry, Tyorden, v1incent, Vagif, vcarpani, Vijay Ravichandran, Vikram Tiwari, Viktor Gal, Vincent, Vishnuvardhan Janapati, Vishwak Srinivasan, Vitor-Alves, wangsiyu, wateryzephyr, WeberXie, WeijieSun, Wen-Heng (Jack) Chung, wenxizhu, Will Battel, William D. Irons, wyzhao, Xiaoming (Jason) Cui, Xiaoquan Kong, Xin, Yasuhiro Matsumoto, ymodak, Yong Tang, Younes Khoudli, Yuan (Terry) Tang, Yuan Lin, Yves-Noel Weweler, Zantares, zhuoryin, zjjott, 卜居, 王振华 (Zhenhua Wang), 黄鑫
 
 # Release 1.12.2
 

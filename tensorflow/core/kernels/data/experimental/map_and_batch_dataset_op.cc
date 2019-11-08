@@ -18,6 +18,7 @@ limitations under the License.
 #include <utility>
 
 #include "tensorflow/core/common_runtime/function.h"
+#include "tensorflow/core/common_runtime/input_colocation_exemption_registry.h"
 #include "tensorflow/core/common_runtime/metrics.h"
 #include "tensorflow/core/framework/dataset.h"
 #include "tensorflow/core/framework/partial_tensor_shape.h"
@@ -763,9 +764,14 @@ class MapAndBatchDatasetOp : public UnaryDatasetOpKernel {
   bool preserve_cardinality_;
 };
 
+REGISTER_KERNEL_BUILDER(Name("MapAndBatchDataset").Device(DEVICE_CPU),
+                        MapAndBatchDatasetOp);
 REGISTER_KERNEL_BUILDER(
     Name("ExperimentalMapAndBatchDataset").Device(DEVICE_CPU),
     MapAndBatchDatasetOp);
+
+REGISTER_INPUT_COLOCATION_EXEMPTION("MapAndBatchDataset");
+REGISTER_INPUT_COLOCATION_EXEMPTION("ExperimentalMapAndBatchDataset");
 
 }  // namespace
 }  // namespace data

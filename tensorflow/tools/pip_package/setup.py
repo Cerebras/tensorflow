@@ -47,20 +47,22 @@ DOCLINES = __doc__.split('\n')
 # result for pip.
 # Also update tensorflow/tensorflow.bzl and
 # tensorflow/core/public/version.h
-_VERSION = '1.14.0-rc0'
+_VERSION = '1.14.1'
 
 REQUIRED_PACKAGES = [
     'absl-py >= 0.7.0',
     'astor >= 0.6.0',
+    'backports.weakref >= 1.0rc1;python_version<"3.4"',
+    'enum34 >= 1.1.6;python_version<"3.4"',
     'gast >= 0.2.0',
     'google_pasta >= 0.1.6',
     'keras_applications >= 1.0.6',
     'keras_preprocessing >= 1.0.5',
-    'numpy >= 1.14.5, < 2.0',
+    'numpy >= 1.16.0, < 2.0',
     'six >= 1.10.0',
     'protobuf >= 3.6.1',
-    'tensorboard >= 1.13.0, < 1.14.0',
-    'tf-estimator-nightly >= 1.14.0.dev2019042301, < 1.14.0.dev2019042302',
+    'tensorboard >= 1.14.0, < 1.15.0',
+    'tensorflow_estimator >= 1.14.0rc0, < 1.15.0rc0',
     'termcolor >= 1.1.0',
     'wrapt >= 1.11.1',
 ]
@@ -95,11 +97,6 @@ if 'tf_nightly' in project_name:
       REQUIRED_PACKAGES[i] = 'tensorflow-estimator-2.0-preview'
     elif 'tensorflow_estimator' in pkg:
       REQUIRED_PACKAGES[i] = 'tf-estimator-nightly'
-
-# weakref.finalize and enum were introduced in Python 3.4
-if sys.version_info < (3, 4):
-  REQUIRED_PACKAGES.append('backports.weakref >= 1.0rc1')
-  REQUIRED_PACKAGES.append('enum34 >= 1.1.6')
 
 # pylint: disable=line-too-long
 CONSOLE_SCRIPTS = [
