@@ -164,6 +164,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   const std::string kReadVarOpString = "readvariableop";
   const std::string kIdentityString = "identity";
 
+
   // additional case check
   bool match_flag = false;
   bool readvarop_flag = false;
@@ -233,8 +234,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
-    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
 
+    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
     LOG(INFO) << "Done Compiling";
     hmod.CopyFrom(result.computation->proto());
 
