@@ -1,3 +1,28 @@
+# Release 1.14.1
+
+## Bug Fixes and Other Changes
+
+* Adds option for introducing slack in the pipeline to reduce CPU contention, via `options = tf.data.Options(); options.experimental_slack = True; dataset = dataset.with_options(options)`.
+* `ResourceVariable` and `Variable` no longer accepts `constraint` in the constructor, nor expose it as a `@property`.
+* Enhanced graphviz output.
+* Fix issue where callbacks do not log values in eager mode when a deferred build model is used.
+* Replace contrib references with `tf.estimator.experimental.*` for APIs in `early_stopping.py`.
+* Delete unused lookup table code.
+* Clarify which model is being initialized.
+* `parallel_for.pfor`: add converters for `Softmax`, `LogSoftmax`, `IsNaN`, `All`, `Any`, `MatrixSetDiag`, `LowerTriangularSolve`, `Cholesky`, `BroadcastTo`, `LogMatrixDeterminant`, `MatrixBandPart`, `OneHot`, `LowerBound`, and `UpperBound`.
+* Add ragged tensor support to `tf.squeeze`.
+* Allow `LinearOperator.solve` to take a `LinearOperator`.
+* Allow all dtypes for `LinearOperatorCirculant`.
+* Add `LinearOperatorHouseholder`.
+* Introduce `MaxParallelism` method.
+* Added `key` and `skip` methods to `random.experimental.Generator`.
+* Update `RaggedTensors` to support int32 `row_splits`.
+* Add `TensorSpec` support for `CompositeTensors`.
+* Add environment variable `TF_CUDNN_DETERMINISTIC`. Setting to "true" or "1" forces the selection of deterministic cuDNN convolution and max-pooling algorithms. When this is enabled, the algorithm selection procedure itself is also deterministic. This change was already present in version 1.14.0, but this note was missing from the version 1.14.0 release notes tagged `v1.14.0`.
+* The `precision_mode` argument to `TrtGraphConverter` is now case insensitive.
+* Auto Mixed-Precision graph optimizer simplifies converting models to float16 for acceleration on Volta and Turing Tensor Cores. This feature can be enabled by wrapping an optimizer class with `tf.train.experimental.enable_mixed_precision_graph_rewrite()`.
+* Fix potential security vulnerability where decoding variant tensors from proto could result in heap out of bounds memory access.
+
 # Release 1.14.0
 
 ## Major Features and Improvements
@@ -12,6 +37,7 @@
     * `libtensorflow.so.1.14.0`, the main library
     * `libtensorflow.so.1`, symlinked to the main library
     * `libtensorflow.so`, symlinked to `.so.1`
+* Auto Mixed-Precision graph optimizer simplifies converting models to float16 for acceleration on Volta and Turing Tensor Cores. This feature can be enabled by wrapping an optimizer class with `tf.train.experimental.enable_mixed_precision_graph_rewrite()`.
 
 ## Behavioral changes
 
@@ -97,6 +123,7 @@
   * Post-training quantization tool supports quantizing weights shared by multiple operations. The models made with versions of this tool will use INT8 types for weights and will only be executable interpreters from this version onwards.
   * Malformed gif images could result in an access out of bounds in the color palette of the frame. This has been fixed now
   * image.resize now considers proper pixel centers and has new kernels (incl. anti-aliasing).
+  * Add environment variable `TF_CUDNN_DETERMINISTIC`. Setting to "true" or "1" forces the selection of deterministic cuDNN convolution and max-pooling algorithms. When this is enabled, the algorithm selection procedure itself is also deterministic.
 * Performance
   * Turn on MKL-DNN contraction kernels by default. MKL-DNN dynamically dispatches the best kernel implementation based on CPU vector architecture. To disable them, build with --define=tensorflow_mkldnn_contraction_kernel=0.
   * Support for multi-host ncclAllReduce in Distribution Strategy.
@@ -135,6 +162,11 @@
   * Use `tf.compat.v1.estimator.inputs` instead of `tf.estimator.inputs`
   * Replace `contrib` references with `tf.estimator.experimental.*` for APIs in `early_stopping.py`
   * Determining the “correct” value of the `--iterations_per_loop` for TPUEstimator or DistributionStrategy continues to be a challenge for our users. We propose dynamically tuning the `--iterations_per_loop` variable, specifically for using TPUEstimator in training mode, based on a user target TPU execution time. Users might specify a value such as: `--iterations_per_loop=300s`, which will result in roughly 300 seconds being spent on the TPU between host side operations.
+* TensorRT
+  * Migrate TensorRT conversion sources from contrib to compiler directory in preparation for TF 2.0.
+  * Add additional, user friendly `TrtGraphConverter` API for TensorRT conversion.
+  * Expand support for TensorFlow operators in TensorRT conversion (e.g. `Gather`, `Slice`, `Pack`, `Unpack`, `ArgMin`, `ArgMax`, `DepthSpaceShuffle`). 
+  * Support TensorFlow operator `CombinedNonMaxSuppression` in TensorRT conversion which significantly accelerates object detection models. Requires recompilation of TensorFlow 1.14 with TensorRT 5.1.
 
 
 ## Thanks to our Contributors

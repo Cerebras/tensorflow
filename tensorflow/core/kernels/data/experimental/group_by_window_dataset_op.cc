@@ -15,6 +15,7 @@ limitations under the License.
 #include <map>
 
 #include "tensorflow/core/common_runtime/function.h"
+#include "tensorflow/core/common_runtime/input_colocation_exemption_registry.h"
 #include "tensorflow/core/framework/dataset.h"
 #include "tensorflow/core/framework/partial_tensor_shape.h"
 #include "tensorflow/core/framework/tensor.h"
@@ -505,9 +506,14 @@ class GroupByWindowDatasetOp : public UnaryDatasetOpKernel {
   std::vector<PartialTensorShape> output_shapes_;
 };
 
+REGISTER_KERNEL_BUILDER(Name("GroupByWindowDataset").Device(DEVICE_CPU),
+                        GroupByWindowDatasetOp);
 REGISTER_KERNEL_BUILDER(
     Name("ExperimentalGroupByWindowDataset").Device(DEVICE_CPU),
     GroupByWindowDatasetOp);
+
+REGISTER_INPUT_COLOCATION_EXEMPTION("GroupByWindowDataset");
+REGISTER_INPUT_COLOCATION_EXEMPTION("ExperimentalGroupByWindowDataset");
 
 }  // namespace
 }  // namespace data

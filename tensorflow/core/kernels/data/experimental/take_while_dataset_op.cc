@@ -16,6 +16,7 @@ limitations under the License.
 #include <vector>
 
 #include "tensorflow/core/common_runtime/function.h"
+#include "tensorflow/core/common_runtime/input_colocation_exemption_registry.h"
 #include "tensorflow/core/framework/dataset.h"
 #include "tensorflow/core/framework/partial_tensor_shape.h"
 #include "tensorflow/core/framework/tensor.h"
@@ -195,8 +196,13 @@ class TakeWhileDatasetOp : public UnaryDatasetOpKernel {
   std::shared_ptr<FunctionMetadata> func_metadata_ = nullptr;
 };
 
+REGISTER_KERNEL_BUILDER(Name("TakeWhileDataset").Device(DEVICE_CPU),
+                        TakeWhileDatasetOp);
 REGISTER_KERNEL_BUILDER(Name("ExperimentalTakeWhileDataset").Device(DEVICE_CPU),
                         TakeWhileDatasetOp);
+
+REGISTER_INPUT_COLOCATION_EXEMPTION("TakeWhileDataset");
+REGISTER_INPUT_COLOCATION_EXEMPTION("ExperimentalTakeWhileDataset");
 
 }  // namespace
 }  // namespace data
