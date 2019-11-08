@@ -373,7 +373,7 @@ def _compile_internal(computation, inputs=None):
     return control_flow_ops.group(control_deps, name='output_0')
 
   output_tensors = [
-      xla_ops.xla_cluster_output(o, name='output{}'.format(i))
+      xla_ops.xla_cluster_output(o, name=o.op.name)
       for i, o in enumerate(output_tensors)
   ]
 
