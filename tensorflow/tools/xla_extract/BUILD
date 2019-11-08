@@ -15,6 +15,7 @@ cc_library(
     name = "tf_graph_to_xla_lib",
     srcs = ["tf_graph_to_xla_lib.cc"],
     hdrs = ["tf_graph_to_xla_lib.h"],
+    copts = ["-g", "-O0"],
     deps = [
        "//tensorflow/core:framework",
         "//tensorflow/core:lib",
