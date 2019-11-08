@@ -155,7 +155,11 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   if (fdef_iter == fdef_lib.mutable_function()->rend()) {
     fdef_iter = fdef_lib.mutable_function()->rend()-1;
     FunctionDef temp_fdef = *fdef_iter;
+<<<<<<< HEAD
     if(xla_log >= DEBUG_LOG){
+=======
+    if(xla_log >= 2){
+>>>>>>> merge conflict
       LOG(INFO) << "cluster not found, using " << temp_fdef.signature().name()
                 << " instead\n";
     }
