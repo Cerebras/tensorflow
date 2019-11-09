@@ -35,6 +35,11 @@
 #include "tensorflow/compiler/xla/service/while_loop_simplifier.h"
 
 #include "tensorflow/core/lib/strings/str_util.h"
+
+#define NO_LOG 0
+#define INFO_LOG 1
+#define DEBUG_LOG 2
+
 namespace tensorflow {
 
 std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
@@ -99,7 +104,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
   char* value = std::getenv("XLA_LOG");
-  int xla_log = value ? atoi(value) : 0;
+  int xla_log = value ? atoi(value) : NO_LOG;
   InitializeDevices(sess_options, &device_mgr, &dev_set);
 
   // Local copy for modification
@@ -148,7 +153,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   if (fdef_iter == fdef_lib.mutable_function()->rend()) {
     fdef_iter = fdef_lib.mutable_function()->rend()-1;
     FunctionDef temp_fdef = *fdef_iter;
-    if(xla_log >= 2){
+    if(xla_log >= DEBUG_LOG){
       LOG(INFO) << "cluster not found, using " << temp_fdef.signature().name()
                 << " instead\n";
     }
@@ -157,7 +162,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
-  if(xla_log >= 2){
+  if(xla_log >= DEBUG_LOG){
     LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
     LOG(INFO) << fdef.signature().name() << "\n";
     LOG(INFO) << "xla args number:" << xla_args.size() << "\n";
@@ -225,7 +230,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   xla_args = new_xla_args;
   // we no longer need to do the rotation
-  if(xla_log >= 2){
+  if(xla_log >= DEBUG_LOG){
     LOG(INFO) << "xla args in correct order and matches fdef\n";
   }
   xla::HloModuleProto hmod;
@@ -245,13 +250,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
-<<<<<<< HEAD
-=======
-    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
->>>>>>> fixing tmp var issue, cleaned up and moved some to be reference instead of value
 
     if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
-    if(xla_log >= 2){
+    if(xla_log >= DEBUG_LOG){
       LOG(INFO) << "Done Compiling";
     }
     hmod.CopyFrom(result.computation->proto());
@@ -294,7 +295,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     if (!s.ok())
       LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
-    if(xla_log >= 2){
+    if(xla_log >= DEBUG_LOG){
       LOG(INFO) << "Done HLO Optimization\n";
     }
     hmod = hlo_module.get()->ToProto();
@@ -337,8 +338,8 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   hmod.SerializeToString(out_graph);
 
   char* value = std::getenv("XLA_LOG");
-  int xla_log = value ? atoi(value) : 0;
-  if(xla_log >= 1){
+  int xla_log = value ? atoi(value) : NO_LOG;
+  if(xla_log >= INFO_LOG){
       std::cout << "XLA Extraction Complete\n";
     }
 
