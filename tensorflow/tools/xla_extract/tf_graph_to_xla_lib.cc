@@ -142,8 +142,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   std::vector<std::string> fetches(
       std::istream_iterator<std::string>{fetch_stream},
       std::istream_iterator<std::string>());
-  for (std::string fetch0 : fetches) {
-    bg_options.callable_options.add_fetch(fetch0);
+  for (const std::string& fetch : fetches) {
+    bg_options.callable_options.add_fetch(fetch);
   }
   std::unique_ptr<ClientGraph> client_graph;
   s = execution_state->BuildGraph(bg_options, &client_graph);
