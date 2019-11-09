@@ -42,7 +42,9 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
       for (const Node* in : node->in_nodes()) {
         auto in_def = in->def();
         XlaCompiler::Argument arg;
-        if (in_def.op() == "VarHandleOp") {
+        const std::string op_name = in_def.op();
+        std::cout << "Op: " << op_name << std::endl << std::flush;
+        if (op_name == "VarHandleOp") {
           arg.kind = XlaCompiler::Argument::kResource;
           arg.resource_kind = XlaResource::kVariable;
           arg.initialized = true;
@@ -50,8 +52,10 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
         } else {
           arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
-          GetNodeAttr(in_def, "_output_shapes", &shape_value);
-          arg.shape = shape_value[0];
+          const Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value);
+          if (!shape_value.empty()) {
+              arg.shape = shape_value[0];
+          }
         }
         arg.name = in_def.name();
 
