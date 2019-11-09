@@ -259,7 +259,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     if (!s.ok())
       LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
-    if(xla_log >= 1){
+    if(xla_log >= 2){
       LOG(INFO) << "Done HLO Optimization\n";
     }
     hmod = hlo_module.get()->ToProto();
@@ -290,7 +290,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   if (device_mgr != nullptr) {
     delete (device_mgr);
   }
-
   return std::move(hmod);
 }
 
@@ -301,6 +300,13 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   gdef.ParseFromString(graph_def_msg);
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
+
+  char* value = std::getenv("XLA_LOG");
+  char default_val = '0';
+  int xla_log = atoi(value ? value : &default_val);
+  if(xla_log >= 1){
+      std::cout << "XLA Extraction Complete\n";
+    }
 
   return Status::OK();
 }
