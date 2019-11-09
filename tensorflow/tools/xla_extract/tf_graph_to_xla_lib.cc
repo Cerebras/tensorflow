@@ -1,4 +1,5 @@
 #include "tensorflow/tools/xla_extract/tf_graph_to_xla_lib.h"
+#include <google/protobuf/util/json_util.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <algorithm>
@@ -33,6 +34,9 @@
 #include "tensorflow/core/lib/strings/str_util.h"
 namespace tensorflow {
 
+constexpr const char* PLACEHOLDER = "Placeholder";
+constexpr const char* VAR_HANDLE_OP = "VarHandleOp";
+
 std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
     const std::unique_ptr<ClientGraph>& cg) {
   std::vector<XlaCompiler::Argument> xla_args;
@@ -48,15 +52,29 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           arg.kind = XlaCompiler::Argument::kResource;
           arg.resource_kind = XlaResource::kVariable;
           arg.initialized = true;
-          GetNodeAttr(in_def, "shape", &(arg.shape));
+          Status status = GetNodeAttr(in_def, "shape", &(arg.shape));
+          if (!status.ok()) {
+            std::cerr << status.error_message() << ", code = " << status.code()
+                      << std::endl;
+          }
         } else {
           arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
-          const Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value);
-          assert(!shape_value.empty());
-          // if (!shape_value.empty()) {
-          arg.shape = shape_value[0];
-          //}
+          Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value);
+          if (!status.ok()) {
+            std::cerr << status.error_message() << ", code = " << status.code() << std::endl;
+          }
+          std::cout << "shape_value.size() = " << shape_value.size() << " ("
+                    << status.error_message() << ")" << std::endl;
+          if (status.ok()) {
+              arg.shape = shape_value[0];
+          } else {
+            status = GetNodeAttr(in_def, "shape", &(arg.shape));
+            if (!status.ok()) {
+              std::cerr << status.error_message()
+                        << ", code = " << status.code() << std::endl;
+            }
+          }
         }
         arg.name = in_def.name();
 
@@ -70,10 +88,6 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   }
   return std::move(xla_args);
 }
-
-// static bool contains(const std::string& s, const char* token) { 
-//     return strstr(s.c_str(), token) != nullptr;
-// }
 
 void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
                        DeviceSet* dev_set) {
@@ -303,11 +317,35 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   return std::move(hmod);
 }
 
+template <typename MSG>
+bool save_msg(const MSG& msg, const std::string& file) {
+  std::string json;
+  google::protobuf::util::JsonPrintOptions op;
+  op.add_whitespace = true;
+  google::protobuf::util::MessageToJsonString(msg, &json, op);
+
+  FILE* f = fopen(file.c_str(), "wt");
+  if (f) {
+    fwrite(json.c_str(), json.size(), sizeof(std::string::value_type), f);
+    fclose(f);
+    return true;
+  } else {
+    std::cerr << "Could not open file: " << file << ", reason: " << strerror(errno) 
+              << std::endl << std::flush;
+    return false;
+  }
+}
+
 Status xla_extract_via_strings(const std::string& graph_def_msg,
-                               const std::string& target_node,
-                               std::string* out_graph) {
+                                const std::string& target_node,
+                                std::string* out_graph) {
   GraphDef gdef;
+  //std::cout << std::endl << graph_def_msg << std::endl;
+
   gdef.ParseFromString(graph_def_msg);
+
+  save_msg(gdef, "/tmp/graph.json");
+
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
 
