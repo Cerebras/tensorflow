@@ -99,8 +99,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
   char* value = std::getenv("XLA_LOG");
-  char default_val = '0';
-  int xla_log = atoi(value ? value : &default_val);
+  int xla_log = value ? atoi(value) : 0;
   InitializeDevices(sess_options, &device_mgr, &dev_set);
 
   // Local copy for modification
@@ -338,8 +337,7 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   hmod.SerializeToString(out_graph);
 
   char* value = std::getenv("XLA_LOG");
-  char default_val = '0';
-  int xla_log = atoi(value ? value : &default_val);
+  int xla_log = value ? atoi(value) : 0;
   if(xla_log >= 1){
       std::cout << "XLA Extraction Complete\n";
     }
