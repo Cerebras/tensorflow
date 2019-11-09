@@ -37,17 +37,30 @@ namespace tensorflow {
 constexpr const char* PLACEHOLDER = "Placeholder";
 constexpr const char* VAR_HANDLE_OP = "VarHandleOp";
 
+static bool verbose = true;
+
 std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
     const std::unique_ptr<ClientGraph>& cg) {
   std::vector<XlaCompiler::Argument> xla_args;
   for (const Node* node : cg->graph.nodes()) {
+    if (verbose) {
+        std::cout << "Inspecting node " << node->name() 
+                  << " of type: " << node->type_string() 
+                  << std::endl;
+    }
     if (node->type_string() == "XlaLaunch") {
       // iterate over the inputs to this node for the args
       for (const Node* in : node->in_nodes()) {
         auto in_def = in->def();
         XlaCompiler::Argument arg;
         const std::string op_name = in_def.op();
-        std::cout << "Op: " << op_name << std::endl << std::flush;
+        if (verbose) {
+            const std::string node_name = in_def.name();
+            std::cout << "Node: " << node_name 
+                    << ", Op: " << op_name 
+                    //<< ", Type: " << in_def.type_string()
+                    << std::endl << std::flush;
+        }
         if (op_name == "VarHandleOp") {
           arg.kind = XlaCompiler::Argument::kResource;
           arg.resource_kind = XlaResource::kVariable;
@@ -67,6 +80,7 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           std::cout << "shape_value.size() = " << shape_value.size() << " ("
                     << status.error_message() << ")" << std::endl;
           if (status.ok()) {
+              assert(!shape_value.empty());
               arg.shape = shape_value[0];
           } else {
             status = GetNodeAttr(in_def, "shape", &(arg.shape));
