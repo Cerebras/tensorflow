@@ -81,5 +81,5 @@ from tensorflow.tools.xla_extract import XlaExtract
 print(loss)
 hlo_mod = XlaExtract(loss)
 
-with open("xla_out.pbtxt", 'w') as f:
+with open("xla_outtest.pbtxt", 'w') as f:
     f.write(str(hlo_mod))
