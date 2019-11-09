@@ -53,9 +53,10 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
           const Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value);
-          if (!shape_value.empty()) {
-              arg.shape = shape_value[0];
-          }
+          assert(!shape_value.empty());
+          // if (!shape_value.empty()) {
+          arg.shape = shape_value[0];
+          //}
         }
         arg.name = in_def.name();
 
@@ -69,21 +70,37 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   }
   return std::move(xla_args);
 }
+
+// static bool contains(const std::string& s, const char* token) { 
+//     return strstr(s.c_str(), token) != nullptr;
+// }
+
 void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
                        DeviceSet* dev_set) {
   std::vector<std::unique_ptr<Device>> devices;
   Status s = DeviceFactory::AddDevices(
       options, "/job:localhost/replica:0/task:0", &devices);
   *device_mgr = new DeviceMgr(std::move(devices));
+  //bool have_device = false;
   int devices_added = 0;
   for (auto d : (*device_mgr)->ListDevices()) {
+    std::cout << "Found Device: " << d->name() << std::endl << std::flush;
     dev_set->AddDevice(d);
     d->op_segment()->AddHold("HOLD");
     if (devices_added == 0) {
-      dev_set->set_client_device(d);
-    }
+    //if (!have_device) {
+      //if (contains(d->name(), DEVICE_CPU_XLA_JIT) || contains(d->name(), DEVICE_XLA_CPU)) {
+        std::cout << "Setting client device to: " << d->name() << std::endl << std::flush;
+        dev_set->set_client_device(d);
+        //have_device = true;
+      //}
+    //}
     ++devices_added;
+   }
   }
+  //if (!have_device) {
+    //assert(false);
+  //}
 }
 
 xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
@@ -102,8 +119,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   std::unique_ptr<GraphExecutionState> execution_state;
   s = GraphExecutionState::MakeForBaseGraph(&gdef, ges_options,
                                             &execution_state);
-  if (!s.ok())
+  if (!s.ok()) {
     LOG(FATAL) << "execution state creation failed: " << s.error_message();
+  }
   BuildGraphOptions bg_options;
   bg_options.use_function_convention = true;
   std::istringstream fetch_stream(fetch);
@@ -115,7 +133,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   }
   std::unique_ptr<ClientGraph> client_graph;
   s = execution_state->BuildGraph(bg_options, &client_graph);
-  if (!s.ok()) LOG(FATAL) << "build graph failed " << s.error_message();
+  if (!s.ok()) {
+      LOG(FATAL) << "build graph failed " << s.error_message();
+  }
 
   // Usually there is only one cluster, but for some graphs (e.g. LSTM) there
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
