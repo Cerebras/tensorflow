@@ -10,8 +10,8 @@ import numpy as np
 from tensorflow.python import keras
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
-from tensorflow.python.compiler.xla import xla
-
+#from tensorflow.python.compiler.xla import xla
+from tensorflow.contrib.compiler import xla
 
 def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
     ''' This function is the input to Estimator constructor.
@@ -21,7 +21,6 @@ def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
     num_classes = 10
 
     data_format = "channels_first"
-
     #jit_scope = tf.python.compiler.jit.experimental_jit_scope
     with tf.variable_scope("eg_model", use_resource=True):
         with tf.device("/job:localhost/replica:0/task:0/device:XLA_CPU:0"):
