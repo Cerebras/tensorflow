@@ -100,6 +100,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
   DeviceMgr* device_mgr;
   DeviceSet dev_set;
+
   // XLA_LOG == 0, no prints
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
