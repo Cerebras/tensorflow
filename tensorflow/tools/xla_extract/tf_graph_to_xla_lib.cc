@@ -18,6 +18,10 @@
 #include "tensorflow/compiler/xla/service/interpreter/compiler.h"
 
 #include <utility>
+
+#include "tensorflow/core/protobuf/config.pb.h"
+#include "tensorflow/core/protobuf/rewriter_config.pb.h"
+
 #include "tensorflow/compiler/xla/service/algebraic_simplifier.h"
 #include "tensorflow/compiler/xla/service/call_inliner.h"
 #include "tensorflow/compiler/xla/service/despecializer.h"
@@ -91,6 +95,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch) {
   Status s;
   SessionOptions sess_options;
+  sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
   DeviceMgr* device_mgr;
   DeviceSet dev_set;
   // XLA_LOG == 0, no prints
@@ -109,7 +114,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   s = GraphExecutionState::MakeForBaseGraph(&gdef, ges_options,
                                             &execution_state);
   if (!s.ok())
-    LOG(FATAL) << "execution state creation failed: " << s.error_message();
+    LOG(ERROR) << "execution state creation failed: " << s.error_message();
   BuildGraphOptions bg_options;
   bg_options.use_function_convention = true;
   std::istringstream fetch_stream(fetch);
@@ -121,25 +126,23 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   }
   std::unique_ptr<ClientGraph> client_graph;
   s = execution_state->BuildGraph(bg_options, &client_graph);
-  if (!s.ok()) LOG(FATAL) << "build graph failed " << s.error_message();
+  if (!s.ok()) LOG(ERROR) << "build graph failed " << s.error_message();
 
   // Usually there is only one cluster, but for some graphs (e.g. LSTM) there
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
   FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
   auto fdef_iter =
-      std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+      std::find_if(fdef_lib.mutable_function()->rbegin(), fdef_lib.mutable_function()->rend(),
                    [](const FunctionDef& f_) -> bool {
                      return (f_.signature().name().find("cluster_") == 0 &&
                              f_.signature().name().substr(
                                  f_.signature().name().length() - 2) == "_0");
                    });
 
-  FunctionDef fdef;
-
-  if (fdef_iter == fdef_lib.function().rend()) {
+  if (fdef_iter == fdef_lib.mutable_function()->rend()) {
     fdef_iter =
-        std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+        std::find_if(fdef_lib.mutable_function()->rbegin(), fdef_lib.mutable_function()->rend(),
                      [](const FunctionDef& f_) -> bool {
                        return (f_.signature().name().find("cluster_") == 0);
                      });
@@ -148,13 +151,14 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   if (fdef_iter == fdef_lib.mutable_function()->rend()) {
     fdef_iter = fdef_lib.mutable_function()->rend()-1;
     FunctionDef temp_fdef = *fdef_iter;
+ 
     if(xla_log >= DEBUG_LOG){
       LOG(INFO) << "cluster not found, using " << temp_fdef.signature().name()
                 << " instead\n";
     }
   }
-
-  auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
+  FunctionDef& fdef = *fdef_iter;
+  std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
   if(xla_log >= DEBUG_LOG){
@@ -189,12 +193,13 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   for (int l = 0; l < fdef_ground_truth.size(); l++) {
     if (new_xla_args[l].name == "") {
-      LOG(FATAL) << "name mismatch error for " << fdef_ground_truth[l].name();
+      LOG(ERROR) << "name mismatch error for " << fdef_ground_truth[l].name();
     }
   }
 
   xla_args = new_xla_args;
   // we no longer need to do the rotation
+
   if(xla_log >= DEBUG_LOG){
     LOG(INFO) << "xla args in correct order and matches fdef\n";
   }
@@ -215,7 +220,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
-    if (!s.ok()) LOG(FATAL) << "Couldn't compile to xla: " << s.error_message();
+    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
+
 
     if(xla_log >= DEBUG_LOG){
       LOG(INFO) << "Done Compiling";
@@ -260,6 +266,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     if (!s.ok())
       LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
+
     if(xla_log >= DEBUG_LOG){
       LOG(INFO) << "Done HLO Optimization\n";
     }
@@ -291,7 +298,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   if (device_mgr != nullptr) {
     delete (device_mgr);
   }
-
   return std::move(hmod);
 }
 
