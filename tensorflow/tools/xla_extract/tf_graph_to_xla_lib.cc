@@ -136,13 +136,18 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
     dev_set->AddDevice(d);
     d->op_segment()->AddHold("HOLD");
     if (devices_added == 0) {
-    //if (!have_device) {
-      //if (contains(d->name(), DEVICE_CPU_XLA_JIT) || contains(d->name(), DEVICE_XLA_CPU)) {
-        std::cout << "Setting client device to: " << d->name() << std::endl << std::flush;
+      const std::string& device_name = d->name();
+      if (device_name.find(":GPU:") == d->name().end()) {
+        // if (!have_device) {
+        // if (contains(d->name(), DEVICE_CPU_XLA_JIT) || contains(d->name(),
+        // DEVICE_XLA_CPU)) {
+        std::cout << "Setting client device to: " << d->name() << std::endl
+                  << std::flush;
         dev_set->set_client_device(d);
-        //have_device = true;
-      //}
-    //}
+        // have_device = true;
+        //}
+        //}
+      }
     ++devices_added;
    }
   }
