@@ -107,12 +107,14 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
                       << std::endl;
           }
         } else {
-        //   if (verbose) {
-        //     std::cout << "*** in_def ***" << std::endl 
-        //               << msg_to_json(in_def) 
-        //               << "**************" << std::endl
-        //               << std::flush;
-        //   }
+          if (verbose) {
+            const std::string node_json = msg_to_json(in_def);
+            printf("\n%s\n", node_json.c_str());  fflush(stdout);
+            // std::cout << "*** in_def ***" << std::endl
+            //           << node_json << std::endl
+            //           << "**************" << std::endl
+            //           << std::flush;
+          }
 
           arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
@@ -268,11 +270,12 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     }
   }
 
+  FunctionDef& fdef = *fdef_iter;
+
   if (save_messages) {
     save_msg(fdef, "/tmp/fdef.json");
   }
 
-  FunctionDef& fdef = *fdef_iter;
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
