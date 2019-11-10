@@ -42,11 +42,17 @@ static bool verbose = true;
 static bool save_messages = true;
 
 template <typename MSG>
-bool save_msg(const MSG& msg, const std::string& file) {
+std::string msg_to_json(const MSG& msg) {
   std::string json;
   google::protobuf::util::JsonPrintOptions op;
   op.add_whitespace = true;
   google::protobuf::util::MessageToJsonString(msg, &json, op);
+  return std::move(json);
+}
+
+template <typename MSG>
+bool save_msg(const MSG& msg, const std::string& file) {
+  const std::string json = msg_to_json(msg);
 
   FILE* f = fopen(file.c_str(), "wt");
   if (f) {
@@ -79,9 +85,8 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
         if (verbose) {
             const std::string node_name = in_def.name();
             std::cout << "Node: " << node_name 
-                    << ", Op: " << op_name 
-                    //<< ", Type: " << in_def.type_string()
-                    << std::endl << std::flush;
+                      << ", Op: " << op_name 
+                      << std::endl << std::flush;
         }
         if (op_name == "VarHandleOp") {
           arg.kind = XlaCompiler::Argument::kResource;
@@ -93,6 +98,13 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
                       << std::endl;
           }
         } else {
+          if (vervose) {
+            std::cout << "*** in_def ***" << std::endl 
+                      << msg_to_json(in_def) 
+                      << "**************" << std::endl
+                      << std::flush;
+          }
+
           arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
           Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value);
