@@ -129,31 +129,27 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
   Status s = DeviceFactory::AddDevices(
       options, "/job:localhost/replica:0/task:0", &devices);
   *device_mgr = new DeviceMgr(std::move(devices));
-  //bool have_device = false;
+  bool have_device = false;
   int devices_added = 0;
   for (auto d : (*device_mgr)->ListDevices()) {
     std::cout << "Found Device: " << d->name() << std::endl << std::flush;
     dev_set->AddDevice(d);
     d->op_segment()->AddHold("HOLD");
-    if (devices_added == 0) {
-      const std::string& device_name = d->name();
-      if (device_name.find(":GPU:") == d->name().end()) {
-        // if (!have_device) {
-        // if (contains(d->name(), DEVICE_CPU_XLA_JIT) || contains(d->name(),
-        // DEVICE_XLA_CPU)) {
-        std::cout << "Setting client device to: " << d->name() << std::endl
-                  << std::flush;
-        dev_set->set_client_device(d);
-        // have_device = true;
-        //}
-        //}
-      }
+    const std::string& device_name = d->name();
+    if (!have_device) {
+        if (device_name.find(":GPU:") == std::string::npos) {
+            std::cout << "Setting client device to: " << d->name() << std::endl
+                      << std::flush;
+            dev_set->set_client_device(d);
+            have_device = true;
+        }
+    }
     ++devices_added;
-   }
   }
-  //if (!have_device) {
-    //assert(false);
-  //}
+  if (!have_device) {
+      throw std::runtime_error("Did not find a suitable client device");
+  }
+  LOG(INFO) << "Added " << devices_added << " devices" << std::endl << std::flush;
 }
 
 xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
