@@ -88,13 +88,14 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
     if (node->type_string() == "XlaLaunch") {
       // iterate over the inputs to this node for the args
       for (const Node* in : node->in_nodes()) {
-        auto in_def = in->def();
+        const NodeDef& in_def = in->def();
         XlaCompiler::Argument arg;
         const std::string op_name = in_def.op();
         if (verbose) {
             const std::string node_name = in_def.name();
-            std::cout << "Node: " << node_name 
-                      << ", Op: " << op_name 
+            std::cout << "Node: " << node_name << ", Op: " << op_name
+                      << ", type: " << in->type_string()
+                      << ", req device: " << in->requested_device() 
                       << std::endl << std::flush;
         }
         if (op_name == "VarHandleOp") {
@@ -157,19 +158,24 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
   bool have_device = false;
   int devices_added = 0;
   for (Device *d : (*device_mgr)->ListDevices()) {
-    std::cout << "Found Device: " << d->name() << std::endl << std::flush;
-    dev_set->AddDevice(d);
-    d->op_segment()->AddHold("HOLD");
-    const std::string& device_name = d->name();
-    if (!have_device) {
+    const std::string device_type = d->device_type();
+    std::cout << "Found Device: " << d->name() << " (" << device_type << ")"
+              << std::endl << std::flush;
+    //if (device_type != DEVICE_XLA_GPU && device_type != "GPU") {
+    if (device_type == DEVICE_XLA_CPU || device_type == "CPU") {
+      dev_set->AddDevice(d);
+      d->op_segment()->AddHold("HOLD");
+      const std::string& device_name = d->name();
+      if (!have_device) {
         if (device_name.find(":GPU:") == std::string::npos) {
-            std::cout << "Setting client device to: " << d->name() << std::endl
-                      << std::flush;
-            dev_set->set_client_device(d);
-            have_device = true;
+          LOG(INFO) << "Setting client device to: " << d->name() << std::endl
+                    << std::flush;
+          dev_set->set_client_device(d);
+          have_device = true;
         }
+      }
+      ++devices_added;
     }
-    ++devices_added;
   }
   if (!have_device) {
       throw std::runtime_error("Did not find a suitable client device");
@@ -324,15 +330,21 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   xla::HloModuleProto hmod;
   {
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
+    // const std::string device_type_str =
+    //     dev_set.client_device()->device_type();
+    // DeviceType device_type(device_type_str);
     XlaCompiler::Options compile_options;
 
     se::Platform *platform = getCompilePlatform();
     if (!platform) {
         throw std::runtime_error("Could not determine platform for compile");
     }
-    auto soc = xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform);
+    LOG(INFO) << "Using platform: " << platform->Name() << std::endl << std::flush;
+    auto soc =
+        xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform);
     compile_options.client = soc.ValueOrDie();
     compile_options.device_type = device_type;
+    //compile_options.device_type = dev_set.client_device()->device_type();
     compile_options.flib_def = client_graph->flib_def.get();
 
     NameAttrList function;
@@ -388,8 +400,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     // hlo optimization run
     s = pipeline.Run(hlo_module.get()).status();
 
-    if (!s.ok())
+    if (!s.ok()) {
       LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
+    }
 
     if(xla_log >= DEBUG_LOG){
       LOG(INFO) << "Done HLO Optimization\n";
