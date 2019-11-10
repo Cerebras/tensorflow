@@ -131,7 +131,7 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
   *device_mgr = new DeviceMgr(std::move(devices));
   bool have_device = false;
   int devices_added = 0;
-  for (auto d : (*device_mgr)->ListDevices()) {
+  for (Device *d : (*device_mgr)->ListDevices()) {
     std::cout << "Found Device: " << d->name() << std::endl << std::flush;
     dev_set->AddDevice(d);
     d->op_segment()->AddHold("HOLD");
@@ -151,6 +151,19 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
   }
   LOG(INFO) << "Added " << devices_added << " devices" << std::endl << std::flush;
 }
+
+se::Platform* getCompilePlatform() {
+    StatusOr<std::vector<se::Platform*>> sop = PlatformUtil::GetSupportedPlatforms();
+    auto& platforms = sop.ValueOrDie();
+    Platform *platform = nullptr;
+    for (Platform *p : platforms) {
+        LOG(INFO) << "Found platform: " << p->Name() << std::endl;
+        if (!platform) {
+            platform = p;  // just get first one for now
+        }
+    }
+    return platform;
+};
 
 xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch) {
@@ -266,8 +279,17 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   {
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
     XlaCompiler::Options compile_options;
-    compile_options.client = xla::ClientLibrary::LocalClientOrDie();
+
+    //compile_options.client = xla::ClientLibrary::LocalClientOrDie("Host");
+
+    Platform platform = getCompilePlatform();
+    if (!platform) {
+        throw std::runtime_error("Could not determin platform for compile");
+    }
+    auto soc = xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform;
+    compile_options.client = soc.ValueOrDie();
     compile_options.device_type = device_type;
+    //compile_options.device_type = dev_set.client_device();
     compile_options.flib_def = client_graph->flib_def.get();
 
     NameAttrList function;
