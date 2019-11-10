@@ -19,6 +19,10 @@
 #include "tensorflow/compiler/xla/service/interpreter/compiler.h"
 
 #include <utility>
+
+#include "tensorflow/core/protobuf/config.pb.h"
+#include "tensorflow/core/protobuf/rewriter_config.pb.h"
+
 #include "tensorflow/compiler/xla/service/algebraic_simplifier.h"
 #include "tensorflow/compiler/xla/service/call_inliner.h"
 #include "tensorflow/compiler/xla/service/despecializer.h"
@@ -33,6 +37,11 @@
 #include "tensorflow/compiler/xla/service/while_loop_simplifier.h"
 
 #include "tensorflow/core/lib/strings/str_util.h"
+
+#define NO_LOG 0
+#define INFO_LOG 1
+#define DEBUG_LOG 2
+
 namespace tensorflow {
 
 constexpr const char* PLACEHOLDER = "Placeholder";
@@ -189,8 +198,14 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch) {
   Status s;
   SessionOptions sess_options;
+  sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
   DeviceMgr* device_mgr;
   DeviceSet dev_set;
+  // XLA_LOG == 0, no prints
+  // XLA_LOG == 1, final message only
+  // XLA_LOG == 2, other useful messages
+  char* value = std::getenv("XLA_LOG");
+  int xla_log = value ? atoi(value) : NO_LOG;
   InitializeDevices(sess_options, &device_mgr, &dev_set);
 
   // Local copy for modification
@@ -228,44 +243,46 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   }
 
   auto fdef_iter =
-      std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+      std::find_if(fdef_lib.mutable_function()->rbegin(), fdef_lib.mutable_function()->rend(),
                    [](const FunctionDef& f_) -> bool {
                      return (f_.signature().name().find("cluster_") == 0 &&
                              f_.signature().name().substr(
                                  f_.signature().name().length() - 2) == "_0");
                    });
 
-  FunctionDef fdef;
-
-  if (fdef_iter == fdef_lib.function().rend()) {
+  if (fdef_iter == fdef_lib.mutable_function()->rend()) {
     fdef_iter =
-        std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
+        std::find_if(fdef_lib.mutable_function()->rbegin(), fdef_lib.mutable_function()->rend(),
                      [](const FunctionDef& f_) -> bool {
                        return (f_.signature().name().find("cluster_") == 0);
                      });
   }
 
-  if (fdef_iter != fdef_lib.function().rend()) {
-    fdef = *fdef_iter;
-  } else {
-    fdef = *fdef_lib.function().begin();
-    LOG(INFO) << "cluster not found, using " << fdef.signature().name()
-              << " instead\n";
+  if (fdef_iter == fdef_lib.mutable_function()->rend()) {
+    fdef_iter = fdef_lib.mutable_function()->rend()-1;
+    FunctionDef temp_fdef = *fdef_iter;
+ 
+    if(xla_log >= DEBUG_LOG){
+      LOG(INFO) << "cluster not found, using " << temp_fdef.signature().name()
+                << " instead\n";
+    }
   }
 
   if (save_messages) {
     save_msg(fdef, "/tmp/fdef.json");
   }
 
-  auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
+  FunctionDef& fdef = *fdef_iter;
+  std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
-
-  LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
-  LOG(INFO) << fdef.signature().name() << "\n";
-  LOG(INFO) << "xla args number:" << xla_args.size() << "\n";
-  LOG(INFO) << "fdef_args number:" << fdef.signature().input_arg().size()
-            << "\n";
+  if(xla_log >= DEBUG_LOG){
+    LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
+    LOG(INFO) << fdef.signature().name() << "\n";
+    LOG(INFO) << "xla args number:" << xla_args.size() << "\n";
+    LOG(INFO) << "fdef_args number:" << fdef.signature().input_arg().size()
+              << "\n";
+  }
 
   // compares fdef_args(ground truth) with xla_args
   // prunes away extra args and reorders to match fdef_args
@@ -291,14 +308,16 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   for (int l = 0; l < fdef_ground_truth.size(); l++) {
     if (new_xla_args[l].name == "") {
-      LOG(FATAL) << "name mismatch error for " << fdef_ground_truth[l].name();
+      LOG(ERROR) << "name mismatch error for " << fdef_ground_truth[l].name();
     }
   }
 
   xla_args = new_xla_args;
   // we no longer need to do the rotation
 
-  LOG(INFO) << "xla args in correct order and matches fdef\n";
+  if(xla_log >= DEBUG_LOG){
+    LOG(INFO) << "xla args in correct order and matches fdef\n";
+  }
   xla::HloModuleProto hmod;
   {
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
@@ -322,9 +341,12 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
-    if (!s.ok()) LOG(FATAL) << "Couldn't compile to xla: " << s.error_message();
+    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
 
-    LOG(INFO) << "Done Compiling";
+
+    if(xla_log >= DEBUG_LOG){
+      LOG(INFO) << "Done Compiling";
+    }
     hmod.CopyFrom(result.computation->proto());
 
     // hlo optimizations
@@ -364,9 +386,11 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     s = pipeline.Run(hlo_module.get()).status();
 
     if (!s.ok())
-      LOG(FATAL) << "Couldn't Run HloOptimization: " << s.error_message();
+      LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
 
-    LOG(INFO) << "Done HLO Optimization\n";
+    if(xla_log >= DEBUG_LOG){
+      LOG(INFO) << "Done HLO Optimization\n";
+    }
     hmod = hlo_module.get()->ToProto();
 
     auto* comps = hmod.mutable_computations();
@@ -395,7 +419,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   if (device_mgr != nullptr) {
     delete (device_mgr);
   }
-
   return std::move(hmod);
 }
 
@@ -412,6 +435,12 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
 
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
+
+  char* value = std::getenv("XLA_LOG");
+  int xla_log = value ? atoi(value) : NO_LOG;
+  if(xla_log >= INFO_LOG){
+      std::cout << "XLA Extraction Complete\n";
+    }
 
   return Status::OK();
 }
