@@ -39,6 +39,7 @@ constexpr const char* PLACEHOLDER = "Placeholder";
 constexpr const char* VAR_HANDLE_OP = "VarHandleOp";
 
 static bool verbose = true;
+static bool save_messages = true;
 
 template <typename MSG>
 bool save_msg(const MSG& msg, const std::string& file) {
@@ -153,14 +154,20 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
   LOG(INFO) << "Added " << devices_added << " devices" << std::endl << std::flush;
 }
 
+/**
+ * @brief Get the Compile Platform object (i.e. "Host", "CUDA", etc.)
+ * 
+ * @return se::Platform* Pointer to Platform object to use for compile (prefer "Host")
+ */
 se::Platform* getCompilePlatform() {
     xla::StatusOr<std::vector<se::Platform*>> sop = xla::PlatformUtil::GetSupportedPlatforms();
     std::vector<se::Platform*>& platforms = sop.ValueOrDie();
     se::Platform *platform = nullptr;
     for (se::Platform *p : platforms) {
         LOG(INFO) << "Found platform: " << p->Name() << std::endl;
-        if (!platform) {
-            platform = p;  // just get first one for now
+        // Get first one, or take "Host" if found
+        if (!platform || p->Name() == "Host") {
+            platform = p;
         }
     }
     return platform;
@@ -204,7 +211,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
   FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
-  save_msg(fdef_lib , "/tmp/FunctionDefLibrary.json");
+  if (save_messages) {
+    save_msg(fdef_lib , "/tmp/FunctionDefLibrary.json");
+  }
 
   auto fdef_iter =
       std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
@@ -232,7 +241,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
               << " instead\n";
   }
 
-  save_msg(fdef, "/tmp/fdef.json");
+  if (save_messages) {
+    save_msg(fdef, "/tmp/fdef.json");
+  }
 
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
@@ -281,16 +292,13 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
     XlaCompiler::Options compile_options;
 
-    //compile_options.client = xla::ClientLibrary::LocalClientOrDie("Host");
-
     se::Platform *platform = getCompilePlatform();
     if (!platform) {
-        throw std::runtime_error("Could not determin platform for compile");
+        throw std::runtime_error("Could not determine platform for compile");
     }
     auto soc = xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform);
     compile_options.client = soc.ValueOrDie();
     compile_options.device_type = device_type;
-    //compile_options.device_type = dev_set.client_device();
     compile_options.flib_def = client_graph->flib_def.get();
 
     NameAttrList function;
@@ -383,11 +391,12 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
                                 const std::string& target_node,
                                 std::string* out_graph) {
   GraphDef gdef;
-  //std::cout << std::endl << graph_def_msg << std::endl;
 
   gdef.ParseFromString(graph_def_msg);
 
-  save_msg(gdef, "/tmp/graph.json");
+  if (save_messages) {
+    save_msg(gdef, "/tmp/graph.json");
+  }
 
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
