@@ -98,12 +98,12 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
                       << std::endl;
           }
         } else {
-          if (verbose) {
-            std::cout << "*** in_def ***" << std::endl 
-                      << msg_to_json(in_def) 
-                      << "**************" << std::endl
-                      << std::flush;
-          }
+        //   if (verbose) {
+        //     std::cout << "*** in_def ***" << std::endl 
+        //               << msg_to_json(in_def) 
+        //               << "**************" << std::endl
+        //               << std::flush;
+        //   }
 
           arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
