@@ -69,9 +69,9 @@ bool save_msg(const MSG& msg, const std::string& file) {
     fclose(f);
     return true;
   } else {
-    std::cerr << "Could not open file: " << file
-              << ", reason: " << strerror(errno) << std::endl
-              << std::flush;
+    LOG(ERROR) << "Could not open file: " << file
+               << ", reason: " << strerror(errno) << std::endl
+               << std::flush;
     return false;
   }
 }
@@ -81,7 +81,7 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   std::vector<XlaCompiler::Argument> xla_args;
   for (const Node* node : cg->graph.nodes()) {
     if (verbose) {
-        std::cout << "Inspecting node " << node->name() 
+        LOG(INFO) << "Inspecting node " << node->name() 
                   << " of type: " << node->type_string() 
                   << std::endl;
     }
@@ -93,10 +93,10 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
         const std::string op_name = in_def.op();
         if (verbose) {
             const std::string node_name = in_def.name();
-            std::cout << "Node: " << node_name << ", Op: " << op_name
+            LOG(INFO) << "Node: " << node_name << ", Op: " << op_name
                       << ", type: " << in->type_string()
-                      << ", req device: " << in->requested_device() 
-                      << std::endl << std::flush;
+                      << ", req device: " << in->requested_device() << std::endl
+                      << std::flush;
         }
         if (op_name == "VarHandleOp") {
           arg.kind = XlaCompiler::Argument::kResource;
@@ -104,26 +104,23 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           arg.initialized = true;
           Status status = GetNodeAttr(in_def, "shape", &(arg.shape));
           if (!status.ok()) {
-            std::cerr << status.error_message() << ", code = " << status.code()
-                      << std::endl;
+            LOG(WARNING) << status.error_message() << ", code = " << status.code()
+                         << std::endl;
           }
         } else {
           if (verbose) {
             const std::string node_json = msg_to_json(in_def);
             printf("\n%s\n", node_json.c_str());  fflush(stdout);
-            // std::cout << "*** in_def ***" << std::endl
-            //           << node_json << std::endl
-            //           << "**************" << std::endl
-            //           << std::flush;
           }
 
           arg.kind = XlaCompiler::Argument::kParameter;
           std::vector<tensorflow::TensorShape> shape_value;
           Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value);
           if (!status.ok()) {
-            std::cerr << status.error_message() << ", code = " << status.code() << std::endl;
+            LOG(WARNING) << status.error_message()
+                        << ", code = " << status.code() << std::endl;
           }
-          std::cout << "shape_value.size() = " << shape_value.size() << " ("
+          LOG(INFO) << "shape_value.size() = " << shape_value.size() << " ("
                     << status.error_message() << ")" << std::endl;
           if (status.ok()) {
               assert(!shape_value.empty());
@@ -131,8 +128,8 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           } else {
             status = GetNodeAttr(in_def, "shape", &(arg.shape));
             if (!status.ok()) {
-              std::cerr << status.error_message()
-                        << ", code = " << status.code() << std::endl;
+              LOG(WARNING) << status.error_message()
+                           << ", code = " << status.code() << std::endl;
             }
           }
         }
@@ -159,10 +156,10 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
   int devices_added = 0;
   for (Device *d : (*device_mgr)->ListDevices()) {
     const std::string device_type = d->device_type();
-    std::cout << "Found Device: " << d->name() << " (" << device_type << ")"
+    LOG(INFO) << "Found Device: " << d->name() << " (" << device_type << ")"
               << std::endl << std::flush;
     //if (device_type != DEVICE_XLA_GPU && device_type != "GPU") {
-    if (device_type == DEVICE_XLA_CPU || device_type == "CPU") {
+    if (device_type == DEVICE_XLA_CPU /*|| device_type == "CPU"*/) {
       dev_set->AddDevice(d);
       d->op_segment()->AddHold("HOLD");
       const std::string& device_name = d->name();
@@ -454,9 +451,9 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
 
   char* value = std::getenv("XLA_LOG");
   int xla_log = value ? atoi(value) : NO_LOG;
-  if(xla_log >= INFO_LOG){
+  if(xla_log >= INFO_LOG) {
       std::cout << "XLA Extraction Complete\n";
-    }
+  }
 
   return Status::OK();
 }
