@@ -39,6 +39,26 @@ constexpr const char* VAR_HANDLE_OP = "VarHandleOp";
 
 static bool verbose = true;
 
+template <typename MSG>
+bool save_msg(const MSG& msg, const std::string& file) {
+  std::string json;
+  google::protobuf::util::JsonPrintOptions op;
+  op.add_whitespace = true;
+  google::protobuf::util::MessageToJsonString(msg, &json, op);
+
+  FILE* f = fopen(file.c_str(), "wt");
+  if (f) {
+    fwrite(json.c_str(), json.size(), sizeof(std::string::value_type), f);
+    fclose(f);
+    return true;
+  } else {
+    std::cerr << "Could not open file: " << file
+              << ", reason: " << strerror(errno) << std::endl
+              << std::flush;
+    return false;
+  }
+}
+
 std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
     const std::unique_ptr<ClientGraph>& cg) {
   std::vector<XlaCompiler::Argument> xla_args;
@@ -168,6 +188,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // Usually there is only one cluster, but for some graphs (e.g. LSTM) there
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
   FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
+
+  save_msg(fdef_lib , "/tmp/FunctionDefLibrary.json");
 
   auto fdef_iter =
       std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
@@ -329,25 +351,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   }
 
   return std::move(hmod);
-}
-
-template <typename MSG>
-bool save_msg(const MSG& msg, const std::string& file) {
-  std::string json;
-  google::protobuf::util::JsonPrintOptions op;
-  op.add_whitespace = true;
-  google::protobuf::util::MessageToJsonString(msg, &json, op);
-
-  FILE* f = fopen(file.c_str(), "wt");
-  if (f) {
-    fwrite(json.c_str(), json.size(), sizeof(std::string::value_type), f);
-    fclose(f);
-    return true;
-  } else {
-    std::cerr << "Could not open file: " << file << ", reason: " << strerror(errno) 
-              << std::endl << std::flush;
-    return false;
-  }
 }
 
 Status xla_extract_via_strings(const std::string& graph_def_msg,
