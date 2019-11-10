@@ -98,7 +98,7 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
                       << std::endl;
           }
         } else {
-          if (vervose) {
+          if (verbose) {
             std::cout << "*** in_def ***" << std::endl 
                       << msg_to_json(in_def) 
                       << "**************" << std::endl
