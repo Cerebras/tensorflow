@@ -22,6 +22,7 @@
 #include "tensorflow/compiler/xla/service/algebraic_simplifier.h"
 #include "tensorflow/compiler/xla/service/call_inliner.h"
 #include "tensorflow/compiler/xla/service/despecializer.h"
+#include "tensorflow/compiler/xla/service/platform_util.h"
 #include "tensorflow/compiler/xla/service/flatten_call_graph.h"
 #include "tensorflow/compiler/xla/service/hlo_constant_folding.h"
 #include "tensorflow/compiler/xla/service/hlo_cse.h"
@@ -153,10 +154,10 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
 }
 
 se::Platform* getCompilePlatform() {
-    StatusOr<std::vector<se::Platform*>> sop = PlatformUtil::GetSupportedPlatforms();
-    auto& platforms = sop.ValueOrDie();
-    Platform *platform = nullptr;
-    for (Platform *p : platforms) {
+    xla::StatusOr<std::vector<se::Platform*>> sop = xla::PlatformUtil::GetSupportedPlatforms();
+    std::vector<se::Platform*>& platforms = sop.ValueOrDie();
+    se::Platform *platform = nullptr;
+    for (se::Platform *p : platforms) {
         LOG(INFO) << "Found platform: " << p->Name() << std::endl;
         if (!platform) {
             platform = p;  // just get first one for now
@@ -282,11 +283,11 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     //compile_options.client = xla::ClientLibrary::LocalClientOrDie("Host");
 
-    Platform platform = getCompilePlatform();
+    se::Platform *platform = getCompilePlatform();
     if (!platform) {
         throw std::runtime_error("Could not determin platform for compile");
     }
-    auto soc = xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform;
+    auto soc = xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform);
     compile_options.client = soc.ValueOrDie();
     compile_options.device_type = device_type;
     //compile_options.device_type = dev_set.client_device();
