@@ -217,6 +217,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
               << " instead\n";
   }
 
+  save_msg(fdef, "/tmp/fdef.json");
+
   auto xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
