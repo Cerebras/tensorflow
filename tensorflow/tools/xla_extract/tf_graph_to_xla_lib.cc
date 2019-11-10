@@ -126,6 +126,7 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
               assert(!shape_value.empty());
               arg.shape = shape_value[0];
           } else {
+            // fall back to 'shape' if there was no '_output_shapes'
             status = GetNodeAttr(in_def, "shape", &(arg.shape));
             if (!status.ok()) {
               LOG(WARNING) << status.error_message()
