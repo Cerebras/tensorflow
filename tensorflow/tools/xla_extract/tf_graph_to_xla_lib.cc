@@ -42,13 +42,42 @@
 #define INFO_LOG 1
 #define DEBUG_LOG 2
 
+
 namespace tensorflow {
 
-static bool verbose = true;
-static bool save_messages = true;
+namespace {  // anonymous namepace
+
+bool is_true(const char *s) {
+    if (s && *s) {
+        const char c = ::tolower(*s);
+        if (c == 'y' || c == 't') {
+            return true;
+        }
+        return atoi(s) > 0;
+    }
+    return false;
+}
+
+bool get_env_bool(const char *s, const bool dflt) {
+    const char *v = getenv(s);
+    if (v && *v) {
+      return is_true(v);
+    }
+    return dflt;
+}
+
+int get_env_int(const char *s, const int dflt) {
+  const char* v = getenv(s);
+  if (v && *v) {
+    return atoi(v);
+  }
+  return dflt;
+}
+
+const bool save_messages = get_env_bool("XLA_SAVE_MESSAGES", false);
 
 template <typename MSG>
-static std::string msg_to_json(const MSG& msg) {
+std::string msg_to_json(const MSG& msg) {
   std::string json;
   google::protobuf::util::JsonPrintOptions op;
   op.add_whitespace = true;
@@ -57,7 +86,7 @@ static std::string msg_to_json(const MSG& msg) {
 }
 
 template <typename MSG>
-static bool save_msg(const MSG& msg, const std::string& file) {
+bool save_msg(const MSG& msg, const std::string& file) {
   const std::string json = msg_to_json(msg);
 
   FILE* f = fopen(file.c_str(), "wt");
@@ -73,9 +102,10 @@ static bool save_msg(const MSG& msg, const std::string& file) {
   }
 }
 
-static std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
+std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
     const std::unique_ptr<ClientGraph>& cg) {
   std::vector<XlaCompiler::Argument> xla_args;
+  const bool verbose = get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
   for (const Node* node : cg->graph.nodes()) {
     if (verbose) {
         LOG(INFO) << "Inspecting node " << node->name() 
@@ -145,7 +175,7 @@ static std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   return std::move(xla_args);
 }
 
-static void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
+void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
                               DeviceSet* dev_set) {
   std::vector<std::unique_ptr<Device>> devices;
   Status s = DeviceFactory::AddDevices(
@@ -157,16 +187,16 @@ static void InitializeDevices(const SessionOptions& options, DeviceMgr** device_
     const std::string device_type = d->device_type();
     LOG(INFO) << "Found Device: " << d->name() << " (" << device_type << ")"
               << std::endl << std::flush;
-    if (device_type == DEVICE_XLA_CPU /*|| device_type == "CPU"*/) {
+    if (device_type == DEVICE_XLA_CPU || device_type == "CPU") {
       dev_set->AddDevice(d);
       d->op_segment()->AddHold("HOLD");
       const std::string& device_name = d->name();
       if (!have_device) {
-        if (device_name.find(":GPU:") == std::string::npos) {
-          LOG(INFO) << "Setting client device to: " << d->name() << std::endl
+        if (device_type == "CPU") {
+            LOG(INFO) << "Setting client device to: " << device_name << std::endl
                     << std::flush;
-          dev_set->set_client_device(d);
-          have_device = true;
+            dev_set->set_client_device(d);
+            have_device = true;
         }
       }
       ++devices_added;
@@ -183,7 +213,7 @@ static void InitializeDevices(const SessionOptions& options, DeviceMgr** device_
  * 
  * @return se::Platform* Pointer to Platform object to use for compile (prefer "Host")
  */
-static se::Platform* getCompilePlatform() {
+se::Platform* getCompilePlatform() {
     xla::StatusOr<std::vector<se::Platform*>> sop = xla::PlatformUtil::GetSupportedPlatforms();
     std::vector<se::Platform*>& platforms = sop.ValueOrDie();
     se::Platform *platform = nullptr;
@@ -196,6 +226,8 @@ static se::Platform* getCompilePlatform() {
     }
     return platform;
 };
+
+}  // anonymous namespace
 
 xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch) {
@@ -242,7 +274,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
   if (save_messages) {
-    save_msg(fdef_lib , "/tmp/FunctionDefLibrary.json");
+    save_msg(fdef_lib , "FunctionDefLibrary.json");
   }
 
   auto fdef_iter =
@@ -274,7 +306,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   FunctionDef& fdef = *fdef_iter;
 
   if (save_messages) {
-    save_msg(fdef, "/tmp/fdef.json");
+    save_msg(fdef, "fdef.json");
   }
 
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
@@ -325,9 +357,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   xla::HloModuleProto hmod;
   {
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
-    // const std::string device_type_str =
-    //     dev_set.client_device()->device_type();
-    // DeviceType device_type(device_type_str);
     XlaCompiler::Options compile_options;
 
     se::Platform *platform = getCompilePlatform();
@@ -339,7 +368,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
         xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform);
     compile_options.client = soc.ValueOrDie();
     compile_options.device_type = device_type;
-    //compile_options.device_type = dev_set.client_device()->device_type();
     compile_options.flib_def = client_graph->flib_def.get();
 
     NameAttrList function;
@@ -441,7 +469,7 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   gdef.ParseFromString(graph_def_msg);
 
   if (save_messages) {
-    save_msg(gdef, "/tmp/graph.json");
+    save_msg(gdef, "graph.json");
   }
 
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);

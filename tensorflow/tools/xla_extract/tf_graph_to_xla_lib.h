@@ -15,12 +15,6 @@
 
 namespace tensorflow {
 
-// std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
-//     const std::unique_ptr<ClientGraph>& cg);
-
-// void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
-//                        DeviceSet* dev_set);
-
 xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch);
 
