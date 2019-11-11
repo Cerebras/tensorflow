@@ -6,6 +6,7 @@
 #include <iterator>
 #include <string>
 #include <tuple>
+#include <utility>
 #include "tensorflow/compiler/tf2xla/xla_compiler.h"
 #include "tensorflow/compiler/tf2xla/xla_op_registry.h"  // for DEVICE_CPU_XLA_JIT
 #include "tensorflow/compiler/xla/client/client_library.h"
@@ -17,8 +18,6 @@
 #include "tensorflow/compiler/xla/service/hlo_pass_pipeline.h"
 #include "tensorflow/compiler/xla/service/hlo_proto_util.h"
 #include "tensorflow/compiler/xla/service/interpreter/compiler.h"
-
-#include <utility>
 
 #include "tensorflow/core/protobuf/config.pb.h"
 #include "tensorflow/core/protobuf/rewriter_config.pb.h"
@@ -41,7 +40,6 @@
 #define NO_LOG 0
 #define INFO_LOG 1
 #define DEBUG_LOG 2
-
 
 namespace tensorflow {
 
@@ -75,6 +73,7 @@ int get_env_int(const char *s, const int dflt) {
 }
 
 const bool save_messages = get_env_bool("XLA_SAVE_MESSAGES", false);
+const bool verbose = get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
 
 template <typename MSG>
 std::string msg_to_json(const MSG& msg) {
@@ -105,7 +104,6 @@ bool save_msg(const MSG& msg, const std::string& file) {
 std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
     const std::unique_ptr<ClientGraph>& cg) {
   std::vector<XlaCompiler::Argument> xla_args;
-  const bool verbose = get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
   for (const Node* node : cg->graph.nodes()) {
     if (verbose) {
         LOG(INFO) << "Inspecting node " << node->name() 
@@ -147,9 +145,11 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
             LOG(WARNING) << status.error_message()
                         << ", code = " << status.code() << std::endl;
           }
-          LOG(INFO) << "_output_shapes: shape_value.size() = "
-                    << shape_value.size() << " (" << status.error_message()
-                    << ")" << std::endl;
+          if (verbose) {
+            LOG(INFO) << "_output_shapes: shape_value.size() = "
+                        << shape_value.size() << " (" << status.error_message()
+                        << ")" << std::endl;
+          }
           if (status.ok()) {
               assert(!shape_value.empty());
               arg.shape = shape_value[0];
@@ -178,34 +178,38 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
 void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
                               DeviceSet* dev_set) {
   std::vector<std::unique_ptr<Device>> devices;
-  Status s = DeviceFactory::AddDevices(
-      options, "/job:localhost/replica:0/task:0", &devices);
+  Status s = DeviceFactory::AddDevices(options, "/job:localhost/replica:0/task:0", &devices);
   *device_mgr = new DeviceMgr(std::move(devices));
   bool have_device = false;
   int devices_added = 0;
   for (Device *d : (*device_mgr)->ListDevices()) {
     const std::string device_type = d->device_type();
-    LOG(INFO) << "Found Device: " << d->name() << " (" << device_type << ")"
-              << std::endl << std::flush;
+    if (verbose) {
+      LOG(INFO) << "Found Device: " << d->name() << " (" << device_type << ")"
+                << std::endl
+                << std::flush;
+    }
     if (device_type == DEVICE_XLA_CPU || device_type == "CPU") {
       dev_set->AddDevice(d);
       d->op_segment()->AddHold("HOLD");
       const std::string& device_name = d->name();
       if (!have_device) {
         if (device_type == "CPU") {
-            LOG(INFO) << "Setting client device to: " << device_name << std::endl
+          LOG(INFO) << "Setting client device to: " << device_name << std::endl
                     << std::flush;
             dev_set->set_client_device(d);
             have_device = true;
         }
+        ++devices_added;
       }
-      ++devices_added;
     }
   }
   if (!have_device) {
       throw std::runtime_error("Did not find a suitable client device");
   }
-  LOG(INFO) << "Added " << devices_added << " devices" << std::endl << std::flush;
+  if (verbose) {
+    LOG(INFO) << "Added " << devices_added << " devices" << std::endl << std::flush;
+  }
 }
 
 /**
@@ -218,7 +222,9 @@ se::Platform* getCompilePlatform() {
     std::vector<se::Platform*>& platforms = sop.ValueOrDie();
     se::Platform *platform = nullptr;
     for (se::Platform *p : platforms) {
-        LOG(INFO) << "Found platform: " << p->Name() << std::endl;
+        if (verbose) {
+            LOG(INFO) << "Found platform: " << p->Name() << std::endl;
+        }
         // Get first one, or take "Host" if found
         if (!platform || p->Name() == "Host") {
             platform = p;
