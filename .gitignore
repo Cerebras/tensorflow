@@ -39,3 +39,8 @@ xcuserdata/**
 *.iml
 local.properties
 gradleBuild
+env
+.vscode
+.scripts
+browse.vsc.*
+cmake-build-*
