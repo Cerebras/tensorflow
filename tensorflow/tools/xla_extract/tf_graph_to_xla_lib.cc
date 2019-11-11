@@ -44,14 +44,11 @@
 
 namespace tensorflow {
 
-constexpr const char* PLACEHOLDER = "Placeholder";
-constexpr const char* VAR_HANDLE_OP = "VarHandleOp";
-
 static bool verbose = true;
 static bool save_messages = true;
 
 template <typename MSG>
-std::string msg_to_json(const MSG& msg) {
+static std::string msg_to_json(const MSG& msg) {
   std::string json;
   google::protobuf::util::JsonPrintOptions op;
   op.add_whitespace = true;
@@ -60,7 +57,7 @@ std::string msg_to_json(const MSG& msg) {
 }
 
 template <typename MSG>
-bool save_msg(const MSG& msg, const std::string& file) {
+static bool save_msg(const MSG& msg, const std::string& file) {
   const std::string json = msg_to_json(msg);
 
   FILE* f = fopen(file.c_str(), "wt");
@@ -76,7 +73,7 @@ bool save_msg(const MSG& msg, const std::string& file) {
   }
 }
 
-std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
+static std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
     const std::unique_ptr<ClientGraph>& cg) {
   std::vector<XlaCompiler::Argument> xla_args;
   for (const Node* node : cg->graph.nodes()) {
@@ -120,8 +117,9 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
             LOG(WARNING) << status.error_message()
                         << ", code = " << status.code() << std::endl;
           }
-          LOG(INFO) << "shape_value.size() = " << shape_value.size() << " ("
-                    << status.error_message() << ")" << std::endl;
+          LOG(INFO) << "_output_shapes: shape_value.size() = "
+                    << shape_value.size() << " (" << status.error_message()
+                    << ")" << std::endl;
           if (status.ok()) {
               assert(!shape_value.empty());
               arg.shape = shape_value[0];
@@ -129,8 +127,8 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
             // fall back to 'shape' if there was no '_output_shapes'
             status = GetNodeAttr(in_def, "shape", &(arg.shape));
             if (!status.ok()) {
-              LOG(WARNING) << status.error_message()
-                           << ", code = " << status.code() << std::endl;
+              LOG(ERROR) << status.error_message()
+                         << ", code = " << status.code() << std::endl;
             }
           }
         }
@@ -147,8 +145,8 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   return std::move(xla_args);
 }
 
-void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
-                       DeviceSet* dev_set) {
+static void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
+                              DeviceSet* dev_set) {
   std::vector<std::unique_ptr<Device>> devices;
   Status s = DeviceFactory::AddDevices(
       options, "/job:localhost/replica:0/task:0", &devices);
@@ -159,7 +157,6 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
     const std::string device_type = d->device_type();
     LOG(INFO) << "Found Device: " << d->name() << " (" << device_type << ")"
               << std::endl << std::flush;
-    //if (device_type != DEVICE_XLA_GPU && device_type != "GPU") {
     if (device_type == DEVICE_XLA_CPU /*|| device_type == "CPU"*/) {
       dev_set->AddDevice(d);
       d->op_segment()->AddHold("HOLD");
@@ -186,7 +183,7 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
  * 
  * @return se::Platform* Pointer to Platform object to use for compile (prefer "Host")
  */
-se::Platform* getCompilePlatform() {
+static se::Platform* getCompilePlatform() {
     xla::StatusOr<std::vector<se::Platform*>> sop = xla::PlatformUtil::GetSupportedPlatforms();
     std::vector<se::Platform*>& platforms = sop.ValueOrDie();
     se::Platform *platform = nullptr;
