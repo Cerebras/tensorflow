@@ -189,16 +189,19 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
                 << std::endl
                 << std::flush;
     }
+    // GPU devices alter the client graph in an incompatible way to the curent implementation
     if (device_type == DEVICE_XLA_CPU || device_type == "CPU") {
       dev_set->AddDevice(d);
       d->op_segment()->AddHold("HOLD");
       const std::string& device_name = d->name();
       if (!have_device) {
         if (device_type == "CPU") {
-          LOG(INFO) << "Setting client device to: " << device_name << std::endl
-                    << std::flush;
-            dev_set->set_client_device(d);
-            have_device = true;
+          if (verbose) {
+            LOG(INFO) << "Setting client device to: " << device_name << std::endl
+                      << std::flush;
+          }
+          dev_set->set_client_device(d);
+          have_device = true;
         }
         ++devices_added;
       }
@@ -369,9 +372,10 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     if (!platform) {
         throw std::runtime_error("Could not determine platform for compile");
     }
-    LOG(INFO) << "Using platform: " << platform->Name() << std::endl << std::flush;
-    auto soc =
-        xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform);
+    if(xla_log >= DEBUG_LOG){
+        LOG(INFO) << "Using platform: " << platform->Name() << std::endl << std::flush;
+    }
+    auto soc = xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform);
     compile_options.client = soc.ValueOrDie();
     compile_options.device_type = device_type;
     compile_options.flib_def = client_graph->flib_def.get();
