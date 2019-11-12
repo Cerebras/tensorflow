@@ -36,6 +36,11 @@
 #include "tensorflow/compiler/xla/service/while_loop_simplifier.h"
 
 #include "tensorflow/core/lib/strings/str_util.h"
+
+#define NO_LOG 0
+#define INFO_LOG 1
+#define DEBUG_LOG 2
+
 namespace tensorflow {
 
 namespace {  // anonymous namepace
@@ -240,8 +245,14 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch) {
   Status s;
   SessionOptions sess_options;
+  sess_options.config.mutable_graph_options()
+      ->mutable_rewrite_options()
+      ->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
   DeviceMgr* device_mgr;
   DeviceSet dev_set;
+  // XLA_LOG == 0, no prints
+  // XLA_LOG == 1, final message only
+  // XLA_LOG == 2, other useful messages
   InitializeDevices(sess_options, &device_mgr, &dev_set);
 
   // Local copy for modification
@@ -278,22 +289,20 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     save_msg(fdef_lib , "FunctionDefLibrary.json");
   }
 
-  auto fdef_iter =
-      std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
-                   [](const FunctionDef& f_) -> bool {
-                     return (f_.signature().name().find("cluster_") == 0 &&
-                             f_.signature().name().substr(
-                                 f_.signature().name().length() - 2) == "_0");
-                   });
+  auto fdef_iter = std::find_if(
+      fdef_lib.mutable_function()->rbegin(),
+      fdef_lib.mutable_function()->rend(), [](const FunctionDef& f_) -> bool {
+        return (f_.signature().name().find("cluster_") == 0 &&
+                f_.signature().name().substr(f_.signature().name().length() -
+                                             2) == "_0");
+      });
 
-  FunctionDef fdef;
-
-  if (fdef_iter == fdef_lib.function().rend()) {
-    fdef_iter =
-        std::find_if(fdef_lib.function().rbegin(), fdef_lib.function().rend(),
-                     [](const FunctionDef& f_) -> bool {
-                       return (f_.signature().name().find("cluster_") == 0);
-                     });
+  if (fdef_iter == fdef_lib.mutable_function()->rend()) {
+    fdef_iter = std::find_if(
+        fdef_lib.mutable_function()->rbegin(),
+        fdef_lib.mutable_function()->rend(), [](const FunctionDef& f_) -> bool {
+          return (f_.signature().name().find("cluster_") == 0);
+        });
   }
 
   if (fdef_iter == fdef_lib.mutable_function()->rend()) {
@@ -413,8 +422,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
-
     if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
+
+
     if (verbose) {
       LOG(INFO) << "Done Compiling";
     }
@@ -491,7 +501,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   if (device_mgr != nullptr) {
     delete (device_mgr);
   }
-
   return std::move(hmod);
 }
 
