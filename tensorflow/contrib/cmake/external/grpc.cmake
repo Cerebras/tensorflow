@@ -73,7 +73,7 @@ ExternalProject_Add(grpc
 # grpc/src/core/ext/census/tracing.c depends on the existence of openssl/rand.h.
 ExternalProject_Add_Step(grpc copy_rand
     COMMAND ${CMAKE_COMMAND} -E copy
-    ${CMAKE_SOURCE_DIR}/patches/grpc/rand.h ${GRPC_BUILD}/include/openssl/rand.h
+    ${CMAKE_CURRENT_LIST_DIR}/../patches/grpc/rand.h ${GRPC_BUILD}/include/openssl/rand.h
     DEPENDEES patch
     DEPENDERS build
 )
