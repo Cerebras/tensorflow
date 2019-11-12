@@ -141,29 +141,33 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
             printf("\n%s\n", node_json.c_str());  fflush(stdout);
           }
 
-          arg.kind = XlaCompiler::Argument::kParameter;
-          std::vector<tensorflow::TensorShape> shape_value;
-          Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value);
-          if (!status.ok()) {
-            LOG(WARNING) << status.error_message()
-                        << ", code = " << status.code() << std::endl;
-          }
-          if (verbose) {
-            LOG(INFO) << "_output_shapes: shape_value.size() = "
-                        << shape_value.size() << " (" << status.error_message()
-                        << ")" << std::endl;
-          }
-          if (status.ok()) {
-              assert(!shape_value.empty());
-              arg.shape = shape_value[0];
-          } else {
-            // fall back to 'shape' if there was no '_output_shapes'
-            status = GetNodeAttr(in_def, "shape", &(arg.shape));
+            arg.kind = XlaCompiler::Argument::kParameter;
+            std::vector<tensorflow::TensorShape> shape_value_list;
+            Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value_list); 
             if (!status.ok()) {
-              LOG(ERROR) << status.error_message()
-                         << ", code = " << status.code() << std::endl;
+              LOG(WARNING) << status.error_message()
+                          << ", code = " << status.code() << std::endl;
             }
-          }
+            if (verbose) {
+              LOG(INFO) << "_output_shapes: shape_value_list.size() = "
+                          << shape_value_list.size() << " (" <<
+                          status.error_message()
+                          << ")" << std::endl;
+            }
+            if (status.ok()) {
+                assert(!shape_value_list.empty());
+                arg.shape = shape_value_list[0];
+            } else {
+              // fall back to 'shape' if there was no '_output_shapes'
+              tensorflow::TensorShape shape_value;
+              status = GetNodeAttr(in_def, "shape", &shape_value);
+              if (!status.ok()) {
+                LOG(ERROR) << status.error_message()
+                           << ", code = " << status.code() << std::endl;
+              } else {
+                arg.shape = shape_value;
+              }
+            }
         }
         arg.name = in_def.name();
 
