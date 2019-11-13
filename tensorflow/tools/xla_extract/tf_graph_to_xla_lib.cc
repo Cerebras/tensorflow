@@ -127,7 +127,9 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
           arg.kind = XlaCompiler::Argument::kResource;
           arg.resource_kind = XlaResource::kVariable;
           arg.initialized = true;
-          Status status = GetNodeAttr(in_def, "shape", &(arg.shape));
+          tensorflow::TensorShape shape_value;
+          Status status = GetNodeAttr(in_def, "shape", &shape_value);
+          arg.shape = shape_value;
           if (!status.ok()) {
             LOG(WARNING) << status.error_message() << ", code = " << status.code()
                          << std::endl;
@@ -155,7 +157,9 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
               arg.shape = shape_value[0];
           } else {
             // fall back to 'shape' if there was no '_output_shapes'
-            status = GetNodeAttr(in_def, "shape", &(arg.shape));
+            tensorflow::TensorShape shape_value;
+            status = GetNodeAttr(in_def, "shape", &shape_value);
+            arg.shape = shape_value;
             if (!status.ok()) {
               LOG(ERROR) << status.error_message()
                          << ", code = " << status.code() << std::endl;
