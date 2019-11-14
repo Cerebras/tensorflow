@@ -106,9 +106,9 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   std::vector<XlaCompiler::Argument> xla_args;
   for (const Node* node : cg->graph.nodes()) {
     if (verbose) {
-        LOG(INFO) << "Inspecting node " << node->name() 
-                  << " of type: " << node->type_string() 
-                  << std::endl;
+      LOG(INFO) << "Inspecting node " << node->name() 
+                << " of type: " << node->type_string() 
+                << std::endl;
     }
     if (node->type_string() == "XlaLaunch") {
       // iterate over the inputs to this node for the args
@@ -117,11 +117,11 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
         XlaCompiler::Argument arg;
         const std::string op_name = in_def.op();
         if (verbose) {
-            const std::string node_name = in_def.name();
-            LOG(INFO) << "Node: " << node_name << ", Op: " << op_name
-                      << ", type: " << in->type_string()
-                      << ", req device: " << in->requested_device() << std::endl
-                      << std::flush;
+          const std::string node_name = in_def.name();
+          LOG(INFO) << "Node: " << node_name << ", Op: " << op_name
+                    << ", type: " << in->type_string()
+                    << ", req device: " << in->requested_device() << std::endl
+                    << std::flush;
         }
         if (op_name == "VarHandleOp") {
           arg.kind = XlaCompiler::Argument::kResource;
@@ -141,33 +141,33 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
             printf("\n%s\n", node_json.c_str());  fflush(stdout);
           }
 
-            arg.kind = XlaCompiler::Argument::kParameter;
-            std::vector<tensorflow::TensorShape> shape_value_list;
-            Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value_list); 
+          arg.kind = XlaCompiler::Argument::kParameter;
+          std::vector<tensorflow::TensorShape> shape_value_list;
+          Status status = GetNodeAttr(in_def, "_output_shapes", &shape_value_list); 
+          if (!status.ok()) {
+            LOG(WARNING) << status.error_message()
+                        << ", code = " << status.code() << std::endl;
+          }
+          if (verbose) {
+            LOG(INFO) << "_output_shapes: shape_value_list.size() = "
+                      << shape_value_list.size() << " (" 
+                      << status.error_message()
+                      << ")" << std::endl;
+          }
+          if (status.ok()) {
+            assert(!shape_value_list.empty());
+            arg.shape = shape_value_list[0];
+          } else {
+            // fall back to 'shape' if there was no '_output_shapes'
+            tensorflow::TensorShape shape_value;
+            status = GetNodeAttr(in_def, "shape", &shape_value);
             if (!status.ok()) {
-              LOG(WARNING) << status.error_message()
-                          << ", code = " << status.code() << std::endl;
-            }
-            if (verbose) {
-              LOG(INFO) << "_output_shapes: shape_value_list.size() = "
-                          << shape_value_list.size() << " (" <<
-                          status.error_message()
-                          << ")" << std::endl;
-            }
-            if (status.ok()) {
-                assert(!shape_value_list.empty());
-                arg.shape = shape_value_list[0];
+              LOG(ERROR) << status.error_message()
+                         << ", code = " << status.code() << std::endl;
             } else {
-              // fall back to 'shape' if there was no '_output_shapes'
-              tensorflow::TensorShape shape_value;
-              status = GetNodeAttr(in_def, "shape", &shape_value);
-              if (!status.ok()) {
-                LOG(ERROR) << status.error_message()
-                           << ", code = " << status.code() << std::endl;
-              } else {
-                arg.shape = shape_value;
-              }
+              arg.shape = shape_value;
             }
+          }
         }
         arg.name = in_def.name();
 
