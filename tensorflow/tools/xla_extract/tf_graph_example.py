@@ -110,6 +110,8 @@ def _draw_graph(logdir):
     with tf.Session() as sess:
         writer = tf.summary.FileWriter(logdir, sess.graph)
 
+# https://github.com/tensorflow/tensorflow/commit/39587aaeb7760c6c963d8668bd6f614360e914f8#diff-4b1165fb6148e99a9fb6fed2dd8979a6R189
+
 # XLA dump: https://groups.google.com/forum/#!topic/xla-dev/nMzNZfk-Jhw
 
 TB_LOGDIR = "/tmp/tblogdir"
