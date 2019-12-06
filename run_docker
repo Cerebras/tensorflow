@@ -1,0 +1,16 @@
+#!/bin/bash
+
+docker run -it \
+        --mount type=bind,source=$HOME,target=/root \
+        --mount type=bind,source=$HOME,target=/home \
+	--mount type=bind,source=/spare,target=/spare \
+        rocm/tensorflow:rocm2.2-tf1.13-python3-dev \
+	/bin/bash
+
+#docker run -it \
+#        --mount type=bind,source=$HOME,target=/home \
+#	--mount type=bind,source=/spare,target=/spare \
+#        rocm/tensorflow:rocm2.2-tf1.13-python3-dev \
+#	/bin/bash
+
+# --output_user_root="$($(dirname $0)/cachename.sh)"

@@ -1,0 +1,1 @@
+nice -n 19 /usr/local/bin/bazel --output_user_root="$(.scripts/cachename.sh)" build --config=opt --config=rocm --action_env=HIP_PLATFORM=hcc //tensorflow/tools/pip_package:build_pip_package --verbose_failures

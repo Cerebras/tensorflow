@@ -39,3 +39,7 @@ xcuserdata/**
 *.iml
 local.properties
 gradleBuild
+/.py_root
+/.scripts
+/.vscode
+/env
