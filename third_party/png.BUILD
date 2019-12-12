@@ -28,13 +28,13 @@ cc_library(
         "pngwrite.c",
         "pngwtran.c",
         "pngwutil.c",
+        "powerpc/powerpc_init.c",
     ] + select({
         ":windows": [
             "intel/intel_init.c",
             "intel/filter_sse2_intrinsics.c",
         ],
-        "@org_tensorflow//tensorflow:linux_ppc64le": [
-            "powerpc/powerpc_init.c",
+        ":linux_ppc64le": [
             "powerpc/filter_vsx_intrinsics.c",
         ],
         "//conditions:default": [
@@ -67,4 +67,9 @@ genrule(
 config_setting(
     name = "windows",
     values = {"cpu": "x64_windows"},
+)
+
+config_setting(
+    name = "linux_ppc64le",
+    values = {"cpu": "powerpc64le"},
 )

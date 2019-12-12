@@ -145,3 +145,9 @@ http_archive(
         "https://storage.googleapis.com/download.tensorflow.org/models/speech_commands_v0.01.zip",
     ],
 )
+
+new_local_repository(
+    name = 'toolchain_target_ppc64',
+    path = '/srv/nfs/vasu-data/ws/buildroot-private/output/host/bin/',
+    build_file = 'ppc64/crosscompile_toolchain_target_ppc64.BUILD'
+)

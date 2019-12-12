@@ -22,4 +22,18 @@
      return res;
    }
  };
- 
+
+--- a/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h
++++ b/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h
+@@ -867,8 +867,9 @@
+       const Index firstIndex = firstInput(index);
+       for (Index i = 0; i < PacketSize; ++i) {
+         Op reducer(m_reducer);
+-        values[i] = internal::InnerMostDimReducer<Self, Op>::reduce(*this, firstIndex + i * num_values_to_reduce,
+-                                                                    num_values_to_reduce, reducer);
++        Self::CoeffReturnType a = internal::InnerMostDimReducer<Self, Op>::reduce(*this, firstIndex + i * num_values_to_reduce,
++                num_values_to_reduce, reducer);
++        values[i] = a;
+       }
+     } else if (PreservingInnerMostDims) {
+       const Index firstIndex = firstInput(index);
