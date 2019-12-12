@@ -34,7 +34,7 @@ from tensorflow.python.ops import array_ops
 from tensorflow.contrib.compiler.xla import compile
 from tensorflow.python.client import timeline
 
-_WITH_SUMMARIES = False
+_WITH_SUMMARIES = True
 
 def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
     ''' This function is the input to Estimator constructor.
@@ -56,7 +56,8 @@ def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
             data_format=data_format)(conv1)
 
         if _WITH_SUMMARIES:
-            tf.summary.scalar('summary_pool1_max', tf.math.reduce_max(pool1))
+            with tf.device('/job:bar/task:0/device:cpu:0'):
+                tf.summary.scalar('summary_pool1_max', tf.math.reduce_max(pool1))
 
         conv2 = keras.layers.Conv2D(
             filters=4,
@@ -168,7 +169,7 @@ def _show_files(path, start=0, end=None):
 
 
 def main():
-    with tf.device("/job:localhost/replica:0/task:0/device:XLA_CPU:0"):
+    with tf.device("/job:localhost/replica:0/task:0/device:XLA_GPU:0"):
         # Placeholder input version
         x = tf.placeholder(tf.float32, shape=xshape)
         y = tf.placeholder(tf.int32, shape=yshape)
@@ -192,8 +193,7 @@ def main():
 
         #train_op
 
-        with tf.device("/job:localhost/replica:0/task:0/device:XLA_CPU:0"):
-            hlo_mod = XlaExtract(loss)
+        hlo_mod = XlaExtract(loss)
 
         hlo_mod_string = hlo_mod.SerializeToString()
 

@@ -190,19 +190,18 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
                 << std::flush;
     }
     // GPU devices alter the client graph in an incompatible way to the curent implementation
-    if (device_type == DEVICE_XLA_CPU || device_type == "CPU") {
+    //if (device_type == DEVICE_XLA_CPU) {
+    if (device_type == "CPU") {
       dev_set->AddDevice(d);
       d->op_segment()->AddHold("HOLD");
       const std::string& device_name = d->name();
       if (!have_device) {
-        if (device_type == "CPU") {
-          if (verbose) {
-            LOG(INFO) << "Setting client device to: " << device_name << std::endl
-                      << std::flush;
-          }
-          dev_set->set_client_device(d);
-          have_device = true;
+        if (verbose) {
+        LOG(INFO) << "Setting client device to: " << device_name << std::endl
+                    << std::flush;
         }
+        dev_set->set_client_device(d);
+        have_device = true;
         ++devices_added;
       }
     }
@@ -236,9 +235,35 @@ se::Platform* getCompilePlatform() {
     return platform;
 };
 
+GraphDef& set_device(GraphDef& gdef, const std::string& device_name,
+                            bool validate) {
+  std::string last_device;
+
+  for (size_t i = 0, n = gdef.node_size(); i < n; ++i) {
+    NodeDef* node = gdef.mutable_node(i);
+    
+    const std::string this_device = node->device();
+    if (!this_device.empty()) {
+      if (validate) {
+        if (last_device.empty()) {
+          last_device = this_device;
+        } else if (this_device != last_device) {
+          std::stringstream msg;
+          msg << "Found more than one device for CS-1 compile: '" << last_device
+              << "' as well as '" << this_device << "'";
+          throw std::runtime_error(msg.str());
+        }
+      }
+
+      node->set_device(device_name);
+    }
+  }
+  return gdef;
+}
+
 }  // anonymous namespace
 
-xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
+xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& graph,
                                            const std::string& fetch) {
   Status s;
   SessionOptions sess_options;
@@ -249,6 +274,10 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
   InitializeDevices(sess_options, &device_mgr, &dev_set);
+
+  GraphDef in_graph;
+  in_graph.CopyFrom(graph);
+  set_device(in_graph, dev_set.client_device()->name(), true);
 
   // Local copy for modification
   GraphDef gdef = in_graph;
@@ -470,8 +499,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 }
 
 Status xla_extract_via_strings(const std::string& graph_def_msg,
-                                const std::string& target_node,
-                                std::string* out_graph) {
+                               const std::string& target_node,
+                               std::string* out_graph) {
   GraphDef gdef;
 
   gdef.ParseFromString(graph_def_msg);
@@ -483,8 +512,8 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
 
-  if(get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
-      std::cout << "XLA Extraction Complete\n";
+  if (get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
+    std::cout << "XLA Extraction Complete\n";
   }
 
   return Status::OK();

@@ -6,10 +6,7 @@ for testing xla extraction
 
 import os
 
-#os.environ["TF_XLA_FLAGS"] = "--xla_dump_executions_to = xla_out.comp"
 #os.environ["XLA_FLAGS"] = "--xla_dump_hlo_as_text --xla_dump_to=./hlo"
-os.environ["XLA_FLAGS"] = "--xla_dump_hlo_as_text --xla_dump_to=./hlo"
-
 
 import tensorflow as tf
 import logging
@@ -20,7 +17,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.contrib.compiler.xla import compile
 
-_WITH_SUMMARIES = False
+_WITH_SUMMARIES = True
 
 def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
     ''' This function is the input to Estimator constructor.
@@ -31,51 +28,54 @@ def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
 
     data_format = "channels_first"
     with tf.variable_scope("eg_model", use_resource=True):
-        conv1 = keras.layers.Conv2D(
-            filters=4,
-            kernel_size=[3, 3],
-            padding="same",
-            activation=tf.nn.relu,
-            data_format=data_format)(features)
-        pool1 = keras.layers.MaxPooling2D(
-            pool_size=(2, 2),
-            data_format=data_format)(conv1)
+        with tf.device("/job:localhost/replica:0/task:0/device:XLA_CPU:0"):
+            conv1 = keras.layers.Conv2D(
+                filters=4,
+                kernel_size=[3, 3],
+                padding="same",
+                activation=tf.nn.relu,
+                data_format=data_format)(features)
+            pool1 = keras.layers.MaxPooling2D(
+                pool_size=(2, 2),
+                data_format=data_format)(conv1)
 
-        if _WITH_SUMMARIES:
-            tf.summary.scalar('summary_pool1_max', tf.math.reduce_max(pool1))
+            if _WITH_SUMMARIES:
+                #with tf.device("/job:localhost/replica:0/task:0/device:XLA_GPU:0"):
+                #with tf.device('/job:bar/task:0/device:cpu:0'):
+                    tf.summary.scalar('summary_pool1_max', tf.math.reduce_max(pool1, name="my_reduce_max"))
 
-        conv2 = keras.layers.Conv2D(
-            filters=4,
-            kernel_size=[3, 3],
-            padding="same",
-            activation=tf.nn.relu,
-            data_format=data_format)(pool1)
+            conv2 = keras.layers.Conv2D(
+                filters=4,
+                kernel_size=[3, 3],
+                padding="same",
+                activation=tf.nn.relu,
+                data_format=data_format)(pool1)
 
-        if _WITH_SUMMARIES:
-            tf.summary.image('summary_conv2_image', conv2)
+            if _WITH_SUMMARIES:
+                tf.summary.image('summary_conv2_image', conv2)
 
-        flat = keras.layers.Flatten(
-            data_format=data_format)(conv2)
-        logits = keras.layers.Dense(
-            units=num_classes,
-            use_bias=False)(flat)
+            flat = keras.layers.Flatten(
+                data_format=data_format)(conv2)
+            logits = keras.layers.Dense(
+                units=num_classes,
+                use_bias=False)(flat)
 
-        labels = tf.one_hot(labels, depth=num_classes)
-        loss = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits_v2(
-                labels=labels, logits=logits), name='loss')
+            labels = tf.one_hot(labels, depth=num_classes)
+            loss = tf.reduce_mean(
+                tf.nn.softmax_cross_entropy_with_logits_v2(
+                    labels=labels, logits=logits), name='loss')
 
-        if _WITH_SUMMARIES:
-            tf.summary.scalar('summary_mean_loss', tf.math.reduce_mean(loss))
+            if _WITH_SUMMARIES:
+                tf.summary.scalar('summary_mean_loss', tf.math.reduce_mean(loss))
 
-        learning_rate = 0.1
-        train_op = \
-            tf.train.GradientDescentOptimizer(
-                learning_rate, name="train_step").minimize(
-                loss, global_step=tf.train.get_global_step())
+            learning_rate = 0.1
+            train_op = \
+                tf.train.GradientDescentOptimizer(
+                    learning_rate, name="train_step").minimize(
+                    loss, global_step=tf.train.get_global_step())
 
-        with ops.control_dependencies([train_op]):
-            return array_ops.identity(loss, name=loss.op.name)
+            with ops.control_dependencies([train_op]):
+                return array_ops.identity(loss, name=loss.op.name)
 
 xshape, yshape = [16, 3, 32, 32], [16, 1]
 
