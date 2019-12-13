@@ -453,6 +453,19 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     const bool disable_HloDCE = get_env_bool("DISABLE_HLO_DCE", false);
     const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
 
+
+    if(get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
+      std::cout << "DISABLE_CALL_INLINER: "<< disable_CallInliner<<"\n";
+      std::cout << "DISABLE_HLO_SUBCOMPUTATION_UNIFICATION: "<< disable_HloSubcomputationUnification<<"\n";
+      std::cout << "DISABLE_HLO_CSE_FALSE: "<< disable_HloCSE_false<<"\n";
+      std::cout << "DISABLE_ALGEBRAIC_SIMPLIFIER: "<< disable_AlgebraicSimplifier<<"\n";
+      std::cout << "DISABLE_WHILE_LOOP_SIMPLIFIER: "<< disable_WhileLoopSimplifier<<"\n";
+      std::cout << "DISABLE_RESHAPE_MOVER: "<< disable_ReshapeMover<<"\n";
+      std::cout << "DISABLE_HLO_CONSTANT_FOLDING: "<< disable_HloConstantFolding<<"\n";
+      std::cout << "DISABLE_HLO_CSE_TRUE: "<< disable_HloCSE_true<<"\n";
+      std::cout << "DISABLE_HLO_DCE: "<< disable_HloDCE<<"\n";
+      std::cout << "DISABLE_FLATTEN_CALL_GRAPH: "<< disable_FlattenCallGraph<<"\n";
+    }
     if(disable_CallInliner==false){
       pipeline.AddPass<xla::CallInliner>();
     }
