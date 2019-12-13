@@ -442,24 +442,71 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     xla::HloPassPipeline pipeline("Interpreter");
 
     // adding passes we wish to run
-    pipeline.AddPass<xla::CallInliner>();
-    pipeline.AddPass<xla::HloSubcomputationUnification>();
-    pipeline.AddPass<xla::HloCSE>(false);
+    const bool disable_CallInliner = get_env_bool("DISABLE_CALL_INLINER", false);
+    const bool disable_HloSubcomputationUnification = get_env_bool("DISABLE_HLO_SUBCOMPUTATION_UNIFICATION", false);
+    const bool disable_HloCSE_false = get_env_bool("DISABLE_HLO_CSE_FALSE", false);
+    const bool disable_AlgebraicSimplifier = get_env_bool("DISABLE_ALGEBRAIC_SIMPLIFIER", false);
+    const bool disable_WhileLoopSimplifier = get_env_bool("DISABLE_WHILE_LOOP_SIMPLIFIER", false);
+    const bool disable_ReshapeMover = get_env_bool("DISABLE_RESHAPE_MOVER", false);
+    const bool disable_HloConstantFolding = get_env_bool("DISABLE_HLO_CONSTANT_FOLDING", false);
+    const bool disable_HloCSE_true = get_env_bool("DISABLE_HLO_CSE_TRUE", false);
+    const bool disable_HloDCE = get_env_bool("DISABLE_HLO_DCE", false);
+    const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
 
-    xla::AlgebraicSimplifierOptions options(
+    if(disable_CallInliner==false){
+      pipeline.AddPass<xla::CallInliner>();
+    }
+    if(disable_HloSubcomputationUnification==false){
+      pipeline.AddPass<xla::HloSubcomputationUnification>();
+    }
+    if(disable_HloCSE_false==false){
+      pipeline.AddPass<xla::HloCSE>(false);
+    }
+    if(disable_AlgebraicSimplifier==false){
+      xla::AlgebraicSimplifierOptions options(
         [](const xla::Shape&, const xla::Shape&) { return false; });
-    options.set_enable_dot_strength_reduction(false);
-    options.set_enable_conv_simplification(false);
-    pipeline.AddPass<xla::AlgebraicSimplifier>(options);
-    pipeline.AddPass<xla::WhileLoopSimplifier>();
-    pipeline.AddPass<xla::ReshapeMover>();
-    pipeline.AddPass<xla::HloConstantFolding>();
-    pipeline.AddPass<xla::HloCSE>(true);
+      options.set_enable_dot_strength_reduction(false);
+      options.set_enable_conv_simplification(false);
+      pipeline.AddPass<xla::AlgebraicSimplifier>(options);
+    }
+    if(disable_WhileLoopSimplifier==false){
+      pipeline.AddPass<xla::WhileLoopSimplifier>();
+    }
+    if(disable_ReshapeMover==false){
+      pipeline.AddPass<xla::ReshapeMover>();
+    }
+    if(disable_HloConstantFolding==false){
+      pipeline.AddPass<xla::HloConstantFolding>();
+    }
+    if(disable_HloCSE_true==false){
+      pipeline.AddPass<xla::HloCSE>(true);
+    }
+    if(disable_HloDCE==false){
+      pipeline.AddPass<xla::HloDCE>();
+    }
+    if(disable_FlattenCallGraph==false){
+      pipeline.AddPass<xla::FlattenCallGraph>();
+    }
+    // pipeline.AddPass<xla::CallInliner>();
+    // pipeline.AddPass<xla::HloSubcomputationUnification>();
+    // pipeline.AddPass<xla::HloCSE>(false);
+
+    // xla::AlgebraicSimplifierOptions options(
+    //     [](const xla::Shape&, const xla::Shape&) { return false; });
+    // options.set_enable_dot_strength_reduction(false);
+    // options.set_enable_conv_simplification(false);
+    // pipeline.AddPass<xla::AlgebraicSimplifier>(options);
+    // pipeline.AddPass<xla::WhileLoopSimplifier>();
+    // pipeline.AddPass<xla::ReshapeMover>();
+    // pipeline.AddPass<xla::HloConstantFolding>();
+    // pipeline.AddPass<xla::HloCSE>(true);
+    // disabled since it errors out
     // pipeline.AddPass<xla::LayoutAssignment>(
     //     hlo_module.get()->mutable_entry_computation_layout(),
     //     xla::LayoutAssignment::InstructionCanChangeLayout);
-    pipeline.AddPass<xla::HloDCE>();
-    pipeline.AddPass<xla::FlattenCallGraph>();
+    // non erroring out disabling
+    // pipeline.AddPass<xla::HloDCE>();
+    // pipeline.AddPass<xla::FlattenCallGraph>();
 
     // hlo optimization run
     s = pipeline.Run(hlo_module.get()).status();
