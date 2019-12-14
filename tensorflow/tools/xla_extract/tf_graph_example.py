@@ -42,7 +42,7 @@ def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
             if _WITH_SUMMARIES:
                 #with tf.device("/job:localhost/replica:0/task:0/device:XLA_GPU:0"):
                 #with tf.device('/job:bar/task:0/device:cpu:0'):
-                    tf.summary.scalar('summary_pool1_max', tf.math.reduce_max(pool1, name="my_reduce_max"))
+                tf.summary.scalar('summary_pool1_max', tf.math.reduce_max(pool1, name="my_reduce_max"))
 
             conv2 = keras.layers.Conv2D(
                 filters=4,

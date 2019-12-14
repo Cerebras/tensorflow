@@ -15,6 +15,7 @@ cc_library(
     name = "tf_graph_to_xla_lib",
     srcs = ["tf_graph_to_xla_lib.cc"],
     hdrs = ["tf_graph_to_xla_lib.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
        "//tensorflow/core:framework",
         "//tensorflow/core:lib",
@@ -30,6 +31,7 @@ cc_library(
 tf_cc_binary(
     name = "tf_graph_to_xla",
     srcs = ["tf_graph_to_xla.cc"],
+    copts = ["-ggdb3", "-O0"],
     visibility = ["//visibility:public"],
     deps = [
         ":tf_graph_to_xla_lib",

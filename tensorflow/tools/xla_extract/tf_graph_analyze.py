@@ -21,6 +21,7 @@ import pathlib
 import graphviz
 import re
 import pydotplus
+import networkx
 
 from pydotplus import graphviz as pydot
 
@@ -56,7 +57,7 @@ def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
             data_format=data_format)(conv1)
 
         if _WITH_SUMMARIES:
-            with tf.device('/job:bar/task:0/device:cpu:0'):
+            #with tf.device('/job:bar/task:0/device:cpu:0'):
                 tf.summary.scalar('summary_pool1_max', tf.math.reduce_max(pool1))
 
         conv2 = keras.layers.Conv2D(
@@ -169,7 +170,7 @@ def _show_files(path, start=0, end=None):
 
 
 def main():
-    with tf.device("/job:localhost/replica:0/task:0/device:XLA_GPU:0"):
+    #with tf.device("/job:localhost/replica:0/task:0/device:XLA_CPU:0"):
         # Placeholder input version
         x = tf.placeholder(tf.float32, shape=xshape)
         y = tf.placeholder(tf.int32, shape=yshape)
@@ -181,7 +182,7 @@ def main():
         if os.path.exists(dot_dir):
             shutil.rmtree(dot_dir)
         os.mkdir(dot_dir)
-        
+
         _standard_compile(model_fn, x, y)
         _show_files(dot_dir, 0, 5)
 
@@ -219,3 +220,43 @@ def main():
         _draw_graph(TB_LOGDIR)
 
 main()
+
+
+#
+# post-xla proto ops:
+#
+    #   op_name: "eg_model_1/conv2d_2/BiasAdd"
+    #   op_name: "eg_model_1/conv2d_2/Conv2D"
+    #   op_name: "eg_model_1/conv2d_2/Relu"
+    #   op_name: "eg_model_1/conv2d_3/BiasAdd"
+    #   op_name: "eg_model_1/conv2d_3/Conv2D"
+    #   op_name: "eg_model_1/conv2d_3/Relu"
+    #   op_name: "eg_model_1/dense_1/MatMul"
+    #   op_name: "eg_model_1/flatten_1/Reshape"
+    #   op_name: "eg_model_1/flatten_1/transpose"
+    #   op_name: "eg_model_1/gradients/eg_model_1/conv2d_2/BiasAdd_grad/BiasAddGrad"
+    #   op_name: "eg_model_1/gradients/eg_model_1/conv2d_2/Conv2D_grad/Conv2DBackpropFilter"
+    #   op_name: "eg_model_1/gradients/eg_model_1/conv2d_2/Relu_grad/ReluGrad"
+    #   op_name: "eg_model_1/gradients/eg_model_1/conv2d_3/BiasAdd_grad/BiasAddGrad"
+    #   op_name: "eg_model_1/gradients/eg_model_1/conv2d_3/Conv2D_grad/Conv2DBackpropFilter"
+    #   op_name: "eg_model_1/gradients/eg_model_1/conv2d_3/Conv2D_grad/Conv2DBackpropInput"
+    #   op_name: "eg_model_1/gradients/eg_model_1/conv2d_3/Relu_grad/ReluGrad"
+    #   op_name: "eg_model_1/gradients/eg_model_1/dense_1/MatMul_grad/MatMul"
+    #   op_name: "eg_model_1/gradients/eg_model_1/dense_1/MatMul_grad/MatMul_1"
+    #   op_name: "eg_model_1/gradients/eg_model_1/flatten_1/Reshape_grad/Reshape"
+    #   op_name: "eg_model_1/gradients/eg_model_1/flatten_1/transpose_grad/transpose"
+    #   op_name: "eg_model_1/gradients/eg_model_1/max_pooling2d_1/MaxPool_grad/MaxPoolGrad"
+    #   op_name: "eg_model_1/gradients/eg_model_1/softmax_cross_entropy_with_logits_grad/ExpandDims_1"
+    #   op_name: "eg_model_1/gradients/eg_model_1/softmax_cross_entropy_with_logits_grad/mul"
+    #   op_name: "eg_model_1/loss"
+    #   op_name: "eg_model_1/max_pooling2d_1/MaxPool"
+    #   op_name: "eg_model_1/one_hot"
+    #   op_name: "eg_model_1/softmax_cross_entropy_with_logits"
+    #   op_name: "eg_model_1/softmax_cross_entropy_with_logits/Reshape_1"
+    #   op_name: "eg_model_1/train_step/update_eg_model_1/conv2d_2/bias/ResourceApplyGradientDescent"
+    #   op_name: "eg_model_1/train_step/update_eg_model_1/conv2d_2/kernel/ResourceApplyGradientDescent"
+    #   op_name: "eg_model_1/train_step/update_eg_model_1/conv2d_3/bias/ResourceApplyGradientDescent"
+    #   op_name: "eg_model_1/train_step/update_eg_model_1/conv2d_3/kernel/ResourceApplyGradientDescent"
+    #   op_name: "eg_model_1/train_step/update_eg_model_1/dense_1/kernel/ResourceApplyGradientDescent"
+    #   op_name: "XLA_Args"
+    #   op_name: "XLA_Retvals"
