@@ -454,7 +454,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
 
 
-    if(get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
+    if(get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
       std::cout << "DISABLE_CALL_INLINER: "<< disable_CallInliner<<"\n";
       std::cout << "DISABLE_HLO_SUBCOMPUTATION_UNIFICATION: "<< disable_HloSubcomputationUnification<<"\n";
       std::cout << "DISABLE_HLO_CSE_FALSE: "<< disable_HloCSE_false<<"\n";
@@ -500,26 +500,12 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     if(disable_FlattenCallGraph==false){
       pipeline.AddPass<xla::FlattenCallGraph>();
     }
-    // pipeline.AddPass<xla::CallInliner>();
-    // pipeline.AddPass<xla::HloSubcomputationUnification>();
-    // pipeline.AddPass<xla::HloCSE>(false);
 
-    // xla::AlgebraicSimplifierOptions options(
-    //     [](const xla::Shape&, const xla::Shape&) { return false; });
-    // options.set_enable_dot_strength_reduction(false);
-    // options.set_enable_conv_simplification(false);
-    // pipeline.AddPass<xla::AlgebraicSimplifier>(options);
-    // pipeline.AddPass<xla::WhileLoopSimplifier>();
-    // pipeline.AddPass<xla::ReshapeMover>();
-    // pipeline.AddPass<xla::HloConstantFolding>();
-    // pipeline.AddPass<xla::HloCSE>(true);
-    // disabled since it errors out
-    // pipeline.AddPass<xla::LayoutAssignment>(
-    //     hlo_module.get()->mutable_entry_computation_layout(),
-    //     xla::LayoutAssignment::InstructionCanChangeLayout);
-    // non erroring out disabling
-    // pipeline.AddPass<xla::HloDCE>();
-    // pipeline.AddPass<xla::FlattenCallGraph>();
+    /*disabled since it errors out
+    pipeline.AddPass<xla::LayoutAssignment>(
+        hlo_module.get()->mutable_entry_computation_layout(),
+        xla::LayoutAssignment::InstructionCanChangeLayout);
+    */
 
     // hlo optimization run
     s = pipeline.Run(hlo_module.get()).status();
