@@ -5387,6 +5387,9 @@ tf_py_wrap_cc(
         "//tensorflow/core/profiler/internal:python_scoped_annotation",
         "//tensorflow/tools/graph_transforms:transform_graph_lib",
         "//tensorflow/lite/toco/python:toco_python_api",
+        "//tensorflow/tools/xla_extract:tf_graph_to_xla_lib",
+        "//tensorflow/core:core_cpu",
+        "//tensorflow/compiler/jit:xla_cpu_device",
         "//tensorflow/python/eager:pywrap_tfe_lib",
         "//tensorflow/core/util/tensor_bundle:tensor_bundle",
     ] + (tf_additional_lib_deps() +
