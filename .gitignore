@@ -33,13 +33,9 @@ tensorflow/contrib/cmake/_build/
 local.properties
 gradleBuild
 
-# iOS
-*.pbxproj
-*.xcworkspace
-/*.podspec
-/tensorflow/lite/**/[ios|objc|swift]*/BUILD
-/tensorflow/lite/examples/ios/simple/data/*.tflite
-/tensorflow/lite/examples/ios/simple/data/*.txt
-Podfile.lock
-Pods
-xcuserdata
+# Cerebras
+env
+.vscode
+.scripts
+browse.vsc.*
+cmake-build-*

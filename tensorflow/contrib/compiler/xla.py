@@ -90,7 +90,7 @@ class _ModelFnWrapper(object):
       return model_fn_lib.EstimatorSpec(
           mode=mode,
           loss=loss,
-          train_op=array_ops.identity(loss),
+          train_op=array_ops.identity(loss, name=loss.op.name),
           scaffold=_get_scaffold(captured_scaffold_fn))
     elif mode == model_fn_lib.ModeKeys.EVAL:
       eval_step, captured_eval_metric_fn, captured_scaffold_fn = (
@@ -135,7 +135,7 @@ class _ModelFnWrapper(object):
       # control dependency of other tensor outputs, it doesn't do so for
       # tensor-typed train_op. Thus, we need to set it explicitly here.
       with ops.control_dependencies([estimator_spec.train_op]):
-        return array_ops.identity(estimator_spec.loss)
+        return array_ops.identity(estimator_spec.loss, name=estimator_spec.loss.op.name)
 
     return train_step, captured_scaffold_fn
 

@@ -47,6 +47,8 @@ limitations under the License.
 
 %include "tensorflow/python/util/transform_graph.i"
 
+%include "tensorflow/python/util/tf_graph_to_xla_lib.i"
+
 %include "tensorflow/python/util/util.i"
 
 %include "tensorflow/python/grappler/cluster.i"
