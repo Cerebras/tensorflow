@@ -442,8 +442,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     xla::HloPassPipeline pipeline("Interpreter");
 
     // adding passes we wish to run
+
+    // default false
     const bool disable_CallInliner = get_env_bool("DISABLE_CALL_INLINER", false);
-    const bool disable_HloSubcomputationUnification = get_env_bool("DISABLE_HLO_SUBCOMPUTATION_UNIFICATION", false);
     const bool disable_HloCSE_false = get_env_bool("DISABLE_HLO_CSE_FALSE", false);
     const bool disable_AlgebraicSimplifier = get_env_bool("DISABLE_ALGEBRAIC_SIMPLIFIER", false);
     const bool disable_WhileLoopSimplifier = get_env_bool("DISABLE_WHILE_LOOP_SIMPLIFIER", false);
@@ -453,6 +454,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     const bool disable_HloDCE = get_env_bool("DISABLE_HLO_DCE", false);
     const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
 
+    // default true
+    const bool disable_LayoutAssignment = get_env_bool("DISABLE_LAYOUT_ASSIGNMENT", true);
+    const bool disable_HloSubcomputationUnification = get_env_bool("DISABLE_HLO_SUBCOMPUTATION_UNIFICATION", true);
 
     if(get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
       std::cout << "DISABLE_CALL_INLINER: "<< disable_CallInliner<<"\n";
@@ -465,6 +469,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
       std::cout << "DISABLE_HLO_CSE_TRUE: "<< disable_HloCSE_true<<"\n";
       std::cout << "DISABLE_HLO_DCE: "<< disable_HloDCE<<"\n";
       std::cout << "DISABLE_FLATTEN_CALL_GRAPH: "<< disable_FlattenCallGraph<<"\n";
+      std::cout << "DISABLE_LAYOUT_ASSIGNMENT: "<< disable_LayoutAssignment<<"\n";
     }
     if(disable_CallInliner==false){
       pipeline.AddPass<xla::CallInliner>();
@@ -500,12 +505,11 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     if(disable_FlattenCallGraph==false){
       pipeline.AddPass<xla::FlattenCallGraph>();
     }
-
-    /*disabled since it errors out
-    pipeline.AddPass<xla::LayoutAssignment>(
+    if(disable_LayoutAssignment==false){
+      pipeline.AddPass<xla::LayoutAssignment>(
         hlo_module.get()->mutable_entry_computation_layout(),
         xla::LayoutAssignment::InstructionCanChangeLayout);
-    */
+    }
 
     // hlo optimization run
     s = pipeline.Run(hlo_module.get()).status();
