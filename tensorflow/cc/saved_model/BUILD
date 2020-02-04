@@ -52,7 +52,7 @@ cc_library(
         "//tensorflow/core:protos_all_cc",
     ]) + if_mobile([
         # Mobile-friendly SavedModel proto. See go/portable-proto for more info.
-        "//tensorflow/core:saved_model_portable_proto",
+        #"//tensorflow/core:saved_model_portable_proto",
     ]) + if_android([
         "//tensorflow/core:android_tensorflow_lib",
     ]) + if_ios([
