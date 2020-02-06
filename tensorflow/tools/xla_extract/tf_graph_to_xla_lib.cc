@@ -164,6 +164,7 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
               LOG(ERROR) << status.error_message()
                          << ", code = " << status.code() << std::endl;
             }
+
           }
         }
         arg.name = in_def.name();
@@ -308,7 +309,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     fdef_iter = fdef_lib.mutable_function()->rend()-1;
     FunctionDef temp_fdef = *fdef_iter;
 
-    if(verbose) {
+    if (verbose) {
       LOG(INFO) << "cluster not found, using " << temp_fdef.signature().name()
                 << " instead\n";
     }
@@ -323,7 +324,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
-  if(verbose) {
+  if (verbose) {
     LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
     LOG(INFO) << fdef.signature().name() << "\n";
     LOG(INFO) << "xla args number:" << xla_args.size() << "\n";
@@ -345,7 +346,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   bool readvarop_flag = false;
   for (int j = 0; j < fdef_ground_truth.size(); j++) {
     std::size_t found = fdef_ground_truth[j].name().find(kReadVarOpString);
-    if(found != std::string::npos){
+    if (found != std::string::npos){
       readvarop_flag = true;
     }
   }
@@ -367,7 +368,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
       }
     }
     // additional case check
-    if(!match_flag && readvarop_flag){
+    if (!match_flag && readvarop_flag){
         std::string xla_arg_name = xla_args[i].name;
     xla_arg_name = str_util::Lowercase(xla_arg_name);
     xla_arg_name = str_util::ArgDefCase(xla_arg_name);
@@ -454,7 +455,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
 
 
-    if(get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
+    if (get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
       std::cout << "DISABLE_CALL_INLINER: "<< disable_CallInliner<<"\n";
       std::cout << "DISABLE_HLO_SUBCOMPUTATION_UNIFICATION: "<< disable_HloSubcomputationUnification<<"\n";
       std::cout << "DISABLE_HLO_CSE_FALSE: "<< disable_HloCSE_false<<"\n";
@@ -466,38 +467,38 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
       std::cout << "DISABLE_HLO_DCE: "<< disable_HloDCE<<"\n";
       std::cout << "DISABLE_FLATTEN_CALL_GRAPH: "<< disable_FlattenCallGraph<<"\n";
     }
-    if(disable_CallInliner==false){
+    if (!disable_CallInliner){
       pipeline.AddPass<xla::CallInliner>();
     }
-    if(disable_HloSubcomputationUnification==false){
+    if (!disable_HloSubcomputationUnification){
       pipeline.AddPass<xla::HloSubcomputationUnification>();
     }
-    if(disable_HloCSE_false==false){
+    if (!disable_HloCSE_false){
       pipeline.AddPass<xla::HloCSE>(false);
     }
-    if(disable_AlgebraicSimplifier==false){
+    if (!disable_AlgebraicSimplifier){
       xla::AlgebraicSimplifierOptions options(
         [](const xla::Shape&, const xla::Shape&) { return false; });
       options.set_enable_dot_strength_reduction(false);
       options.set_enable_conv_simplification(false);
       pipeline.AddPass<xla::AlgebraicSimplifier>(options);
     }
-    if(disable_WhileLoopSimplifier==false){
+    if (!disable_WhileLoopSimplifier){
       pipeline.AddPass<xla::WhileLoopSimplifier>();
     }
-    if(disable_ReshapeMover==false){
+    if (!disable_ReshapeMover){
       pipeline.AddPass<xla::ReshapeMover>();
     }
-    if(disable_HloConstantFolding==false){
+    if (!disable_HloConstantFolding){
       pipeline.AddPass<xla::HloConstantFolding>();
     }
-    if(disable_HloCSE_true==false){
+    if (!disable_HloCSE_true){
       pipeline.AddPass<xla::HloCSE>(true);
     }
-    if(disable_HloDCE==false){
+    if (!disable_HloDCE){
       pipeline.AddPass<xla::HloDCE>();
     }
-    if(disable_FlattenCallGraph==false){
+    if (!disable_FlattenCallGraph){
       pipeline.AddPass<xla::FlattenCallGraph>();
     }
 
@@ -563,7 +564,7 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
 
-  if(get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
+  if (get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
       std::cout << "XLA Extraction Complete\n";
   }
 
