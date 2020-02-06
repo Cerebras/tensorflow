@@ -55,6 +55,7 @@ cc_library(
     name = "bfloat16_support",
     srcs = ["bfloat16_support.cc"],
     hdrs = ["bfloat16_support.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":hlo",
     ],
@@ -64,6 +65,7 @@ cc_library(
     name = "bfloat16_conversion_folding",
     srcs = ["bfloat16_conversion_folding.cc"],
     hdrs = ["bfloat16_conversion_folding.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":bfloat16_support",
         ":hlo",
@@ -98,6 +100,7 @@ cc_library(
     name = "bfloat16_normalization",
     srcs = ["bfloat16_normalization.cc"],
     hdrs = ["bfloat16_normalization.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":bfloat16_support",
         ":hlo",
@@ -135,6 +138,7 @@ cc_library(
     name = "bfloat16_propagation",
     srcs = ["bfloat16_propagation.cc"],
     hdrs = ["bfloat16_propagation.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":bfloat16_support",
         ":hlo",
@@ -174,6 +178,7 @@ cc_library(
     name = "dump",
     srcs = ["dump.cc"],
     hdrs = ["dump.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":hlo",
         ":hlo_graph_dumper",
@@ -191,6 +196,7 @@ cc_library(
     name = "shape_inference",
     srcs = ["shape_inference.cc"],
     hdrs = ["shape_inference.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":hlo",
         "//tensorflow/compiler/xla:shape_util",
@@ -259,6 +265,7 @@ cc_library(
         "hlo_evaluator_typed_visitor_uint64.cc",
         "hlo_evaluator_typed_visitor_uint8.cc",
     ],
+    copts = ["-ggdb3", "-O0"],
     hdrs = ["hlo_evaluator.h"],
     deps = [
         ":dynamic_dimension_inference",
@@ -333,6 +340,7 @@ cc_library(
         "hlo_sharding.cc",
         "hlo_sharding_metadata.cc",
     ],
+    copts = ["-ggdb3", "-O0"],
     hdrs = [
         "dfs_hlo_visitor.h",
         "dfs_hlo_visitor_with_default.h",
@@ -568,6 +576,7 @@ cc_library(
     name = "call_graph",
     srcs = ["call_graph.cc"],
     hdrs = ["call_graph.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":hlo",
         "//tensorflow/compiler/xla:status_macros",
@@ -604,6 +613,7 @@ cc_library(
     name = "flatten_call_graph",
     srcs = ["flatten_call_graph.cc"],
     hdrs = ["flatten_call_graph.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":call_graph",
         ":hlo",
@@ -674,6 +684,7 @@ cc_library(
     name = "platform_util",
     srcs = ["platform_util.cc"],
     hdrs = ["platform_util.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":compiler",
         "//tensorflow/compiler/xla:debug_options_flags",
@@ -691,6 +702,7 @@ cc_library(
     name = "backend",
     srcs = ["backend.cc"],
     hdrs = ["backend.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":compiler",
         ":computation_placer",
@@ -716,6 +728,7 @@ cc_library(
     name = "service",
     srcs = ["service.cc"],
     hdrs = ["service.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":allocation_tracker",
         ":backend",
@@ -766,6 +779,7 @@ cc_library(
     name = "local_service",
     srcs = ["local_service.cc"],
     hdrs = ["local_service.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":backend",
         ":compiler",
@@ -801,6 +815,7 @@ cc_library(
     name = "compile_only_service",
     srcs = ["compile_only_service.cc"],
     hdrs = ["compile_only_service.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":backend",
         ":compiler",
@@ -936,6 +951,7 @@ cc_library(
     name = "compiler",
     srcs = ["compiler.cc"],
     hdrs = ["compiler.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":buffer_value",
         ":computation_placer",
@@ -957,6 +973,7 @@ cc_library(
     name = "llvm_compiler",
     srcs = ["llvm_compiler.cc"],
     hdrs = ["llvm_compiler.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":compiler",
         "//tensorflow/core:lib_internal",
@@ -968,6 +985,7 @@ cc_library(
     name = "transfer_manager",
     srcs = ["transfer_manager.cc"],
     hdrs = ["transfer_manager.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":shaped_buffer",
         "//tensorflow/compiler/xla:literal",
@@ -989,6 +1007,7 @@ cc_library(
     name = "allocation_tracker",
     srcs = ["allocation_tracker.cc"],
     hdrs = ["allocation_tracker.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":backend",
         ":transfer_manager",
@@ -1010,6 +1029,7 @@ cc_library(
     name = "execution_tracker",
     srcs = ["execution_tracker.cc"],
     hdrs = ["execution_tracker.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":backend",
         ":stream_pool",
@@ -1027,6 +1047,7 @@ cc_library(
     name = "channel_tracker",
     srcs = ["channel_tracker.cc"],
     hdrs = ["channel_tracker.h"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":hlo",
         "//tensorflow/compiler/xla:status",

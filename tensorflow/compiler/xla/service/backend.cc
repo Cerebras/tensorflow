@@ -81,6 +81,7 @@ struct Backend::IntraOpThreadPool {
 
 /* static */ StatusOr<std::unique_ptr<Backend>> Backend::CreateBackend(
     const BackendOptions& options) {
+  HERE();
   se::Platform* platform = options.platform();
   TF_ASSIGN_OR_RETURN(auto compiler, Compiler::GetForPlatform(platform));
   TF_ASSIGN_OR_RETURN(
@@ -127,6 +128,7 @@ Backend::Backend(se::Platform* platform, Compiler* compiler,
       compiler_(compiler),
       transfer_manager_(transfer_manager),
       computation_placer_(computation_placer) {
+  HERE();
   // The given set of stream executors set may include invalid executors.
   for (se::StreamExecutor* exec : stream_executors) {
     if (exec != nullptr) {
@@ -170,6 +172,7 @@ tensorflow::thread::ThreadPool* Backend::eigen_intra_op_thread_pool() const {
 
 StatusOr<se::StreamExecutor*> Backend::stream_executor(
     int device_ordinal) const {
+  HERE();
   if (device_ordinal < 0 ||
       device_ordinal > stream_executors_.back()->device_ordinal()) {
     return InvalidArgument(

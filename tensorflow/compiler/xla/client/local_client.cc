@@ -263,6 +263,7 @@ StatusOr<std::unique_ptr<LocalExecutable>> LocalClient::Compile(
     const XlaComputation& computation,
     const absl::Span<const Shape* const> argument_layouts,
     const ExecutableBuildOptions& options) {
+  HERE();
   ExecutableBuildOptions updated_options = options;
   if (options.device_ordinal() == -1) {
     updated_options.set_device_ordinal(default_device_ordinal());

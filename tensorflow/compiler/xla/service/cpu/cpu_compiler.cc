@@ -114,6 +114,8 @@ limitations under the License.
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 #include "tensorflow/core/platform/dynamic_annotations.h"
 
+__thread int EnterLeave::depth_ = 0;
+
 namespace xla {
 namespace cpu {
 using BufferInfo = cpu_function_runtime::BufferInfo;
@@ -251,6 +253,7 @@ class CollectProfileCandidates : public DfsHloVisitorWithDefault {
 Status CpuCompiler::RunHloPassesThroughLayoutAssn(
     HloModule* module, bool /*is_aot_compile*/,
     LLVMTargetMachineFeatures* target_machine_features) {
+  HERE();
   HloPassPipeline pipeline("HLO passes through layout assignment");
   pipeline.AddInvariantChecker<HloVerifier>(/*layout_sensitive=*/false,
                                             /*allow_mixed_precision=*/false);
@@ -351,6 +354,7 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
 Status CpuCompiler::RunHloPassesAfterLayoutAssn(
     HloModule* module, bool is_aot_compile,
     LLVMTargetMachineFeatures* target_machine_features) {
+  HERE();
   HloPassPipeline pipeline("HLO passes after layout assignment");
   // After layout assignment, use a layout-sensitive verifier.
   auto& after_layout_assn =
@@ -407,6 +411,7 @@ Status CpuCompiler::RunHloPassesAfterLayoutAssn(
 
 Status CpuCompiler::RunHloPasses(HloModule* module, bool is_aot_compile,
                                  llvm::TargetMachine* target_machine) {
+  HERE();
   LLVMTargetMachineFeatures target_machine_features(target_machine);
   TF_RETURN_IF_ERROR(RunHloPassesThroughLayoutAssn(module, is_aot_compile,
                                                    &target_machine_features));
@@ -506,6 +511,7 @@ Status CreateHloProfilingArtifacts(
         computation_to_profile_idx,
     std::unique_ptr<HloProfileIndexMap>* hlo_profile_index_map,
     std::unique_ptr<HloProfilePrinterData>* hlo_profile_printer_data) {
+  HERE();
   *hlo_profile_index_map = absl::make_unique<HloProfileIndexMap>(module);
   const HloComputation& entry_computation = *module.entry_computation();
 
@@ -538,6 +544,7 @@ Status CreateHloProfilingArtifacts(
 StatusOr<std::unique_ptr<HloModule>> CpuCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module, se::StreamExecutor* /*stream_exec*/,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
+  HERE();
   std::unique_ptr<llvm::TargetMachine> jit_target_machine =
       SimpleOrcJIT::InferTargetMachineForJIT(
           CompilerTargetOptions(module->config()),
@@ -598,6 +605,7 @@ struct OrcJITPostCompilationHook {
 StatusOr<std::unique_ptr<Executable>> CpuCompiler::RunBackend(
     std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
+  HERE();
   VLOG(1) << "Compiling: " << module->name();
   XLA_SCOPED_LOGGING_TIMER(
       absl::StrFormat("Compiling [%s] for CPU using JIT", module->name()));
@@ -735,6 +743,7 @@ StatusOr<std::unique_ptr<Executable>> CpuCompiler::RunBackend(
 StatusOr<std::vector<std::unique_ptr<AotCompilationResult>>>
 CpuCompiler::CompileAheadOfTime(std::unique_ptr<HloModuleGroup> module_group,
                                 const AotCompilationOptions& aot_options) {
+  HERE();
   TF_RET_CHECK(!module_group->empty());
   std::vector<std::unique_ptr<HloModule>> modules =
       module_group->ConsumeModules();

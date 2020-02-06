@@ -11,6 +11,7 @@ cc_library(
     name = "interpreter_transfer_manager",
     srcs = ["interpreter_transfer_manager.cc"],
     hdrs = ["interpreter_transfer_manager.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla/service:generic_transfer_manager",
         "//tensorflow/compiler/xla/service:transfer_manager",
@@ -25,6 +26,7 @@ cc_library(
     name = "compiler",
     srcs = ["compiler.cc"],
     hdrs = ["compiler.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":executable",
         ":platform_id",
@@ -65,6 +67,7 @@ cc_library(
     name = "platform_id",
     srcs = ["platform_id.cc"],
     hdrs = ["platform_id.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = ["//tensorflow/core:stream_executor_headers_lib"] + if_static(
         ["@protobuf_archive//:protobuf"],
         ["@protobuf_archive//:protobuf_headers"],
@@ -75,6 +78,7 @@ cc_library(
     name = "executable",
     srcs = ["executable.cc"],
     hdrs = ["executable.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":executor",
         "//tensorflow/compiler/xla:literal",
@@ -102,6 +106,7 @@ cc_library(
     name = "platform",
     srcs = ["platform.cc"],
     hdrs = ["platform.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":executor",
         ":platform_id",
@@ -114,6 +119,7 @@ cc_library(
     name = "executor",
     srcs = ["executor.cc"],
     hdrs = ["executor.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla:shape_util",
         "//tensorflow/compiler/xla:status_macros",

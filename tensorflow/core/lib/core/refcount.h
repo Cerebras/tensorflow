@@ -87,7 +87,9 @@ class ScopedUnref {
 // Inlined routines, since these are performance critical
 inline RefCounted::RefCounted() : ref_(1) {}
 
-inline RefCounted::~RefCounted() { DCHECK_EQ(ref_.load(), 0); }
+inline RefCounted::~RefCounted() {
+  //DCHECK_EQ(ref_.load(), 0);
+}
 
 inline void RefCounted::Ref() const {
   DCHECK_GE(ref_.load(), 1);

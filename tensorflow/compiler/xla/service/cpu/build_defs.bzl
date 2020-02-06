@@ -8,4 +8,4 @@ def runtime_copts():
     }) + select({
         "//tensorflow:android": ["-O2"],
         "//conditions:default": [],
-    }))
+    })) + [ "-ggdb3", "-O0" ]

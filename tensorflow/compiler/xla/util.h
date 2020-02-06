@@ -565,4 +565,40 @@ Status EraseElementFromVector(std::vector<T>* container, const T& value) {
   XLA_LOG_LINES(::tensorflow::ERROR, X); \
   LOG(FATAL) << "Aborting in " << __FUNCTION__ << " due to previous errors.";
 
+class EnterLeave {
+    static __thread int depth_;
+    const std::string label_;
+public:
+    static std::string concat(const char *s0, const char *s1, const char *s2) {
+      std::string s;
+      if (s0 && *s0) {
+        s = s0;
+        s += "::";
+      }
+      s += s1;
+      s += " (";
+      s += s2;
+      s += ")";
+      return s;
+    }
+    inline EnterLeave(const std::string label) : label_(label) {
+      for (int x = 0; x < depth_; ++x) {
+        printf("  ");
+      }
+      printf("ENTER: %s\n", label.c_str());
+      fflush(stdout);
+      ++depth_;
+    }
+    inline ~EnterLeave() {
+      --depth_;
+      for (int x = 0; x < depth_; ++x) {
+        printf("  ");
+      }
+      printf("LEAVE: %s\n", label_.c_str());
+      fflush(stdout);
+    }
+};
+
+#define HERE() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__))
+
 #endif  // TENSORFLOW_COMPILER_XLA_UTIL_H_

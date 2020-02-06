@@ -53,6 +53,7 @@ cc_library(
         "xrt_state.h",
         "xrt_util.h",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":xrt_proto",
         "//tensorflow/compiler/jit:xla_device",

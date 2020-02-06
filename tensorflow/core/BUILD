@@ -3240,7 +3240,7 @@ tf_cuda_library(
         "public/version.h",
     ],
     hdrs = CORE_CPU_LIB_HEADERS,
-    copts = tf_copts(),
+    copts = tf_copts() + ["-ggdb3", "-O0"],
     deps = [
         ":bfc_allocator",
         ":graph",
