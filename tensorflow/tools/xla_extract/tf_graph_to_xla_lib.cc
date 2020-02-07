@@ -658,10 +658,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                   });
   }
 
-//  if (device_mgr != nullptr) {
-//    delete (device_mgr);
-//  }
-
   return std::move(hmod);
 }
 
