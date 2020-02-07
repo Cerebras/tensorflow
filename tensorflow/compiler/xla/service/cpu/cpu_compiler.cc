@@ -114,7 +114,14 @@ limitations under the License.
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 #include "tensorflow/core/platform/dynamic_annotations.h"
 
+//#include "tensorflow/tools/xla_extract/tf_graph_to_xla_lib.h"
+
 __thread int EnterLeave::depth_ = 0;
+
+namespace tensorflow {
+    Status xla_extract_via_strings(const string& graph_def_msg,
+                                   const string& target_node, string* out_graph);
+}
 
 namespace xla {
 namespace cpu {
@@ -540,6 +547,13 @@ Status CreateHloProfilingArtifacts(
 }
 
 }  // namespace
+
+Status do_xla_extract_via_strings() {
+    return ::tensorflow::xla_extract_via_strings(
+            "foo",
+            "bar",
+            nullptr);
+}
 
 StatusOr<std::unique_ptr<HloModule>> CpuCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module, se::StreamExecutor* /*stream_exec*/,

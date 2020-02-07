@@ -180,14 +180,14 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   return std::move(xla_args);
 }
 
-void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
+void InitializeDevices(const SessionOptions& options, std::unique_ptr<DeviceMgr>& device_mgr,
                               DeviceSet* dev_set) {
   std::vector<std::unique_ptr<Device>> devices;
   Status s = DeviceFactory::AddDevices(options, "/job:localhost/replica:0/task:0", &devices);
-  *device_mgr = new DeviceMgr(std::move(devices));
+  device_mgr.reset(new DeviceMgr(std::move(devices)));
   bool have_device = false;
   int devices_added = 0;
-  for (Device *d : (*device_mgr)->ListDevices()) {
+  for (Device *d : device_mgr->ListDevices()) {
     const std::string device_type = d->device_type();
     if (verbose) {
       LOG(INFO) << "Found Device: " << d->name() << " (" << device_type << ")"
@@ -243,17 +243,132 @@ se::Platform* getCompilePlatform() {
 
 }  // anonymous namespace
 
+xla::HloModuleProto RunHlo(
+            std::unique_ptr<xla::HloModule>& hlo_module,
+            const std::vector<XlaCompiler::Argument>& xla_args) {
+    Status s;
+    if (verbose) {
+        LOG(INFO) << "xla args in correct order and matches fdef\n";
+    }
+    xla::HloModuleProto hmod;
+    {
+        xla::HloPassPipeline pipeline("Interpreter");
+
+        // adding passes we wish to run
+        const bool disable_CallInliner = get_env_bool("DISABLE_CALL_INLINER", false);
+        const bool disable_HloSubcomputationUnification = get_env_bool("DISABLE_HLO_SUBCOMPUTATION_UNIFICATION", false);
+        const bool disable_HloCSE_false = get_env_bool("DISABLE_HLO_CSE_FALSE", false);
+        const bool disable_AlgebraicSimplifier = get_env_bool("DISABLE_ALGEBRAIC_SIMPLIFIER", false);
+        const bool disable_WhileLoopSimplifier = get_env_bool("DISABLE_WHILE_LOOP_SIMPLIFIER", false);
+        const bool disable_ReshapeMover = get_env_bool("DISABLE_RESHAPE_MOVER", false);
+        const bool disable_HloConstantFolding = get_env_bool("DISABLE_HLO_CONSTANT_FOLDING", false);
+        const bool disable_HloCSE_true = get_env_bool("DISABLE_HLO_CSE_TRUE", false);
+        const bool disable_HloDCE = get_env_bool("DISABLE_HLO_DCE", false);
+        const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
+
+
+        if (get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
+            std::cout << "DISABLE_CALL_INLINER: "<< disable_CallInliner<<"\n";
+            std::cout << "DISABLE_HLO_SUBCOMPUTATION_UNIFICATION: "<< disable_HloSubcomputationUnification<<"\n";
+            std::cout << "DISABLE_HLO_CSE_FALSE: "<< disable_HloCSE_false<<"\n";
+            std::cout << "DISABLE_ALGEBRAIC_SIMPLIFIER: "<< disable_AlgebraicSimplifier<<"\n";
+            std::cout << "DISABLE_WHILE_LOOP_SIMPLIFIER: "<< disable_WhileLoopSimplifier<<"\n";
+            std::cout << "DISABLE_RESHAPE_MOVER: "<< disable_ReshapeMover<<"\n";
+            std::cout << "DISABLE_HLO_CONSTANT_FOLDING: "<< disable_HloConstantFolding<<"\n";
+            std::cout << "DISABLE_HLO_CSE_TRUE: "<< disable_HloCSE_true<<"\n";
+            std::cout << "DISABLE_HLO_DCE: "<< disable_HloDCE<<"\n";
+            std::cout << "DISABLE_FLATTEN_CALL_GRAPH: "<< disable_FlattenCallGraph<<"\n";
+        }
+        if (!disable_CallInliner){
+            pipeline.AddPass<xla::CallInliner>();
+        }
+        if (!disable_HloSubcomputationUnification){
+            pipeline.AddPass<xla::HloSubcomputationUnification>();
+        }
+        if (!disable_HloCSE_false){
+            pipeline.AddPass<xla::HloCSE>(false);
+        }
+        if (!disable_AlgebraicSimplifier){
+            xla::AlgebraicSimplifierOptions options(
+                    [](const xla::Shape&, const xla::Shape&) { return false; });
+            options.set_enable_dot_strength_reduction(false);
+            options.set_enable_conv_simplification(false);
+            pipeline.AddPass<xla::AlgebraicSimplifier>(options);
+        }
+        if (!disable_WhileLoopSimplifier){
+            pipeline.AddPass<xla::WhileLoopSimplifier>();
+        }
+        if (!disable_ReshapeMover){
+            pipeline.AddPass<xla::ReshapeMover>();
+        }
+        if (!disable_HloConstantFolding){
+            pipeline.AddPass<xla::HloConstantFolding>();
+        }
+        if (!disable_HloCSE_true){
+            pipeline.AddPass<xla::HloCSE>(true);
+        }
+        if (!disable_HloDCE){
+            pipeline.AddPass<xla::HloDCE>();
+        }
+        if (!disable_FlattenCallGraph){
+            pipeline.AddPass<xla::FlattenCallGraph>();
+        }
+
+        /*disabled since it errors out
+        pipeline.AddPass<xla::LayoutAssignment>(
+            hlo_module.get()->mutable_entry_computation_layout(),
+            xla::LayoutAssignment::InstructionCanChangeLayout);
+        */
+
+        // hlo optimization run
+        s = pipeline.Run(hlo_module.get()).status();
+
+        if (!s.ok()) {
+            LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
+        }
+
+        if (verbose) {
+            LOG(INFO) << "Done HLO Optimization\n";
+        }
+        hmod = hlo_module.get()->ToProto();
+
+        auto* comps = hmod.mutable_computations();
+
+        auto entry_comp_iter =
+                std::find_if(comps->begin(), comps->end(),
+                             [&hmod](const xla::HloComputationProto& c_) -> bool {
+                                 return c_.id() == hmod.entry_computation_id();
+                             });
+
+        if (entry_comp_iter == comps->end()) {
+            throw std::runtime_error(
+                    "Could not find entry computation in HLO module.");
+        }
+        xla::HloComputationProto& entry_comp = *entry_comp_iter;
+
+        std::for_each(entry_comp.mutable_instructions()->begin(),
+                      entry_comp.mutable_instructions()->end(),
+                      [&xla_args](xla::HloInstructionProto& instr) {
+                          if (instr.opcode() == "parameter") {
+                              instr.set_name(xla_args[instr.parameter_number()].name);
+                          }
+                      });
+    }
+
+    return std::move(hmod);
+}
+
 xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch) {
   Status s;
   SessionOptions sess_options;
   sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
-  DeviceMgr* device_mgr;
+  std::unique_ptr<DeviceMgr> device_mgr;
   DeviceSet dev_set;
   // XLA_LOG == 0, no prints
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
-  InitializeDevices(sess_options, &device_mgr, &dev_set);
+  InitializeDevices(sess_options, device_mgr, &dev_set);
 
   // Local copy for modification
   GraphDef gdef = in_graph;
@@ -543,9 +658,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                   });
   }
 
-  if (device_mgr != nullptr) {
-    delete (device_mgr);
-  }
+//  if (device_mgr != nullptr) {
+//    delete (device_mgr);
+//  }
 
   return std::move(hmod);
 }
