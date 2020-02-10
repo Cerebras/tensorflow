@@ -26,6 +26,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/service/source_map_util.h"
 #include "tensorflow/compiler/xla/service/stream_pool.h"
 #include "tensorflow/compiler/xla/status_macros.h"
+#include "tensorflow/core/util/util.h"
 
 using xla::source_map_util::InvalidParameterArgument;
 

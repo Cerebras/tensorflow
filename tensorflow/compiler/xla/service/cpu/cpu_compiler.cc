@@ -25,6 +25,8 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+#include "tensorflow/core/util/util.h"
+
 // IWYU pragma: no_include "llvm/Config/Disassemblers.def.inc"
 // IWYU pragma: no_include "llvm/Config/Targets.def.inc"
 #include "absl/memory/memory.h"
@@ -116,11 +118,9 @@ limitations under the License.
 
 //#include "tensorflow/tools/xla_extract/tf_graph_to_xla_lib.h"
 
-__thread int EnterLeave::depth_ = 0;
+// __thread int EnterLeave::depth_ = 0;
 
 namespace tensorflow {
-    Status xla_extract_via_strings(const string& graph_def_msg,
-                                   const string& target_node, string* out_graph);
     xla::HloModuleProto RunHlo(std::unique_ptr<xla::HloModule>& hlo_module);
 }
 
@@ -136,15 +136,29 @@ std::string msg_to_json(const MSG& msg) {
   return std::move(json);
 }
 
-template <typename MSG>
-bool save_msg(const MSG& msg, const std::string& file) {
-  const std::string json = msg_to_json(msg);
+static std::atomic<int> save_msg_counter{0};
 
-  FILE* f = fopen(file.c_str(), "wt");
+template <typename MSG>
+bool save_msg(const MSG& msg, const std::string& file, int counter) {
+  static int save_msg_counter = 0;
+
+  const std::string json = msg_to_json(msg);
+  const std::string counter_str = std::to_string(counter);
+  const std::string json_file = file + "_" + counter_str + ".json";
+
+  FILE* f = fopen(json_file.c_str(), "wt");
   if (f) {
     fwrite(json.c_str(), json.size(), sizeof(std::string::value_type), f);
     fclose(f);
-    return true;
+    const std::string pbtxt_file = file + "_" + counter_str + ".pbtxt";
+    f = fopen(pbtxt_file.c_str(), "wt");
+    if (f) {
+      std::string pbtxt;
+      msg.SerializeToString(&pbtxt);
+      fwrite(pbtxt.data(), pbtxt.size(), sizeof(std::string::value_type), f);
+      fclose(f);
+      return true;
+    }
   } else {
     VLOG(0) << "Could not open file: " << file
             << ", reason: " << strerror(errno) << std::endl
@@ -165,8 +179,10 @@ std::unique_ptr<HloModule> copy(const HloModule& src) {
 
 void wse_compile(const HloModule& hlom) {
   std::unique_ptr<HloModule> hlo_module = copy(hlom);
+  const int counter = save_msg_counter++;
+  save_msg(hlo_module->ToProto(), "wse_hlom_in", counter);
   xla::HloModuleProto wse_hlom = tensorflow::RunHlo(hlo_module);
-  save_msg(wse_hlom, "wse_hlom");
+  save_msg(wse_hlom, "wse_hlom_out", counter);
 }
 
 using BufferInfo = cpu_function_runtime::BufferInfo;
@@ -306,7 +322,7 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
     LLVMTargetMachineFeatures* target_machine_features) {
   HERE();
 
-  save_msg(module->ToProto(), "RunHloPassesThroughLayoutAssn_1");
+  //save_msg(module->ToProto(), "RunHloPassesThroughLayoutAssn_1");
 
   wse_compile(*module);
 
@@ -405,7 +421,7 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
       &pipeline, module->config().debug_options(),
       ReducePrecisionInsertion::PassTiming::AFTER_FUSION);
   Status result = pipeline.Run(module).status();
-  save_msg(module->ToProto(), "RunHloPassesThroughLayoutAssn_2");
+  //save_msg(module->ToProto(), "RunHloPassesThroughLayoutAssn_2");
   return result;
 }
 
@@ -598,13 +614,6 @@ Status CreateHloProfilingArtifacts(
 }
 
 }  // namespace
-
-Status do_xla_extract_via_strings() {
-    return ::tensorflow::xla_extract_via_strings(
-            "foo",
-            "bar",
-            nullptr);
-}
 
 StatusOr<std::unique_ptr<HloModule>> CpuCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module, se::StreamExecutor* /*stream_exec*/,

@@ -19,6 +19,8 @@ limitations under the License.
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
+/* static */ __thread int EnterLeave::depth_ = 0;
+
 namespace tensorflow {
 
 StringPiece NodeNamePrefix(const StringPiece& op_name) {

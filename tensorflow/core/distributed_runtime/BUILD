@@ -203,6 +203,7 @@ tf_cuda_library(
     hdrs = [
         "worker.h",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":graph_mgr",
         ":partial_run_mgr",

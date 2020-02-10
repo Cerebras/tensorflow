@@ -58,6 +58,7 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/ptr_util.h"
 #include "tensorflow/stream_executor/device_memory_allocator.h"
+#include "tensorflow/core/util/util.h"
 
 namespace xla {
 namespace {

@@ -50,6 +50,7 @@ limitations under the License.
 #include "tensorflow/core/lib/hash/hash.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/util/dump_graph.h"
+#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 namespace {
