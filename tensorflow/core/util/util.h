@@ -63,9 +63,15 @@ bool DisableMKL();
 
 }  // namespace tensorflow
 
+
+#include <sys/syscall.h>
+#include <zconf.h>
+
 class EnterLeave {
     static __thread int depth_;
+    static const std::string library_;
     const std::string label_;
+    const pid_t thread_id_;
 public:
     static std::string concat(const char *s0, const char *s1, const char *s2) {
       std::string s;
@@ -79,11 +85,11 @@ public:
       s += ")";
       return s;
     }
-    inline EnterLeave(const std::string label) : label_(label) {
+    inline EnterLeave(const std::string label) : label_(label), thread_id_(syscall(SYS_gettid)) {
       for (int x = 0; x < depth_; ++x) {
         printf("  ");
       }
-      printf("ENTER: %s\n", label.c_str());
+      printf("ENTER[%lu (%s)]: %s\n", thread_id_, library_.c_str(), label.c_str());
       fflush(stdout);
       ++depth_;
     }
@@ -92,7 +98,7 @@ public:
       for (int x = 0; x < depth_; ++x) {
         printf("  ");
       }
-      printf("LEAVE: %s\n", label_.c_str());
+      printf("LEAVE[%lu (%s)]: %s\n", thread_id_, library_.c_str(), label_.c_str());
       fflush(stdout);
     }
 };
