@@ -121,10 +121,54 @@ __thread int EnterLeave::depth_ = 0;
 namespace tensorflow {
     Status xla_extract_via_strings(const string& graph_def_msg,
                                    const string& target_node, string* out_graph);
+    xla::HloModuleProto RunHlo(std::unique_ptr<xla::HloModule>& hlo_module);
 }
 
 namespace xla {
 namespace cpu {
+
+template <typename MSG>
+std::string msg_to_json(const MSG& msg) {
+  std::string json;
+  google::protobuf::util::JsonPrintOptions op;
+  op.add_whitespace = true;
+  google::protobuf::util::MessageToJsonString(msg, &json, op);
+  return std::move(json);
+}
+
+template <typename MSG>
+bool save_msg(const MSG& msg, const std::string& file) {
+  const std::string json = msg_to_json(msg);
+
+  FILE* f = fopen(file.c_str(), "wt");
+  if (f) {
+    fwrite(json.c_str(), json.size(), sizeof(std::string::value_type), f);
+    fclose(f);
+    return true;
+  } else {
+    VLOG(0) << "Could not open file: " << file
+            << ", reason: " << strerror(errno) << std::endl
+            << std::flush;
+    return false;
+  }
+}
+
+std::unique_ptr<HloModule> copy(const HloModule& src) {
+  HloModuleProto module_proto = src.ToProto();
+  DebugOptions debug_options;
+  StatusOr<HloModuleConfig> module_config = HloModule::CreateModuleConfigFromProto(
+      module_proto, debug_options);
+  StatusOr<std::unique_ptr<HloModule>> new_module = HloModule::CreateFromProto(module_proto,
+      module_config.ValueOrDie());
+    return std::unique_ptr<HloModule>(new_module.ValueOrDie().release());
+}
+
+void wse_compile(const HloModule& hlom) {
+  std::unique_ptr<HloModule> hlo_module = copy(hlom);
+  xla::HloModuleProto wse_hlom = tensorflow::RunHlo(hlo_module);
+  save_msg(wse_hlom, "wse_hlom");
+}
+
 using BufferInfo = cpu_function_runtime::BufferInfo;
 
 CpuAotCompilationOptions::CpuAotCompilationOptions(
@@ -261,6 +305,11 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
     HloModule* module, bool /*is_aot_compile*/,
     LLVMTargetMachineFeatures* target_machine_features) {
   HERE();
+
+  save_msg(module->ToProto(), "RunHloPassesThroughLayoutAssn_1");
+
+  wse_compile(*module);
+
   HloPassPipeline pipeline("HLO passes through layout assignment");
   pipeline.AddInvariantChecker<HloVerifier>(/*layout_sensitive=*/false,
                                             /*allow_mixed_precision=*/false);
@@ -355,7 +404,9 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
   ReducePrecisionInsertion::AddPasses(
       &pipeline, module->config().debug_options(),
       ReducePrecisionInsertion::PassTiming::AFTER_FUSION);
-  return pipeline.Run(module).status();
+  Status result = pipeline.Run(module).status();
+  save_msg(module->ToProto(), "RunHloPassesThroughLayoutAssn_2");
+  return result;
 }
 
 Status CpuCompiler::RunHloPassesAfterLayoutAssn(

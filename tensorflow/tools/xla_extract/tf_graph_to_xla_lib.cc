@@ -239,13 +239,11 @@ se::Platform* getCompilePlatform() {
         }
     }
     return platform;
-};
+}
 
 }  // anonymous namespace
 
-xla::HloModuleProto RunHlo(
-            std::unique_ptr<xla::HloModule>& hlo_module,
-            const std::vector<XlaCompiler::Argument>& xla_args) {
+xla::HloModuleProto RunHlo(std::unique_ptr<xla::HloModule>& hlo_module) {
     Status s;
     if (verbose) {
         LOG(INFO) << "xla args in correct order and matches fdef\n";
@@ -331,28 +329,6 @@ xla::HloModuleProto RunHlo(
             LOG(INFO) << "Done HLO Optimization\n";
         }
         hmod = hlo_module.get()->ToProto();
-
-        auto* comps = hmod.mutable_computations();
-
-        auto entry_comp_iter =
-                std::find_if(comps->begin(), comps->end(),
-                             [&hmod](const xla::HloComputationProto& c_) -> bool {
-                                 return c_.id() == hmod.entry_computation_id();
-                             });
-
-        if (entry_comp_iter == comps->end()) {
-            throw std::runtime_error(
-                    "Could not find entry computation in HLO module.");
-        }
-        xla::HloComputationProto& entry_comp = *entry_comp_iter;
-
-        std::for_each(entry_comp.mutable_instructions()->begin(),
-                      entry_comp.mutable_instructions()->end(),
-                      [&xla_args](xla::HloInstructionProto& instr) {
-                          if (instr.opcode() == "parameter") {
-                              instr.set_name(xla_args[instr.parameter_number()].name);
-                          }
-                      });
     }
 
     return std::move(hmod);
@@ -544,6 +520,10 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     }
     hmod.CopyFrom(result.computation->proto());
 
+    if (save_messages) {
+      save_msg(hmod, "hmod_in.json");
+    }
+
     // hlo optimizations
     xla::StatusOr<xla::ProgramShape> program_shape_status =
         result.computation->GetProgramShape();
@@ -635,6 +615,10 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     }
     hmod = hlo_module.get()->ToProto();
 
+    if (save_messages) {
+      save_msg(hmod, "hmod_out_1.json");
+    }
+
     auto* comps = hmod.mutable_computations();
 
     auto entry_comp_iter =
@@ -656,6 +640,10 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                       instr.set_name(xla_args[instr.parameter_number()].name);
                     }
                   });
+  }
+
+  if (save_messages) {
+    save_msg(hmod, "hmod_out_2.json");
   }
 
   return std::move(hmod);
