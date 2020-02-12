@@ -155,15 +155,16 @@ bool save_msg(const MSG& msg, const std::string& file, int counter) {
     fwrite(json.c_str(), json.size(), sizeof(std::string::value_type), f);
     fclose(f);
     const std::string pbtxt_file = file + "_" + counter_str + ".pbtxt";
-    //f = fopen(pbtxt_file.c_str(), "wt");
-    //if (f) {
-      //std::string pbtxt;
-      //msg.SerializeToString(&pbtxt);
-      //fwrite(pbtxt.data(), pbtxt.size(), sizeof(std::string::value_type), f);
-      //fclose(f);
-      tensorflow::WriteBinaryProto(tensorflow::Env::Default(), pbtxt_file, msg);
+    f = fopen(pbtxt_file.c_str(), "wb");
+    if (f) {
+      std::string pbtxt;
+      msg.SerializeToString(&pbtxt);
+      fwrite(pbtxt.data(), pbtxt.size(), sizeof(std::string::value_type), f);
+      fclose(f);
+      //tensorflow::WriteBinaryProto(tensorflow::Env::Default(), pbtxt_file, msg);
+      //tensorflow::WriteTextProto(tensorflow::Env::Default(), pbtxt_file, msg);
       return true;
-    //}
+    }
   } else {
     VLOG(0) << "Could not open file: " << file
             << ", reason: " << strerror(errno) << std::endl
