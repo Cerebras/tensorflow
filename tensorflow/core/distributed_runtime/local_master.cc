@@ -96,7 +96,7 @@ Status LocalMaster::PartialRunSetup(CallOptions* call_options,
 Status LocalMaster::RunStep(CallOptions* call_options,
                             RunStepRequestWrapper* request,
                             MutableRunStepResponseWrapper* response) {
-  HERE();
+  //HERE();
   Notification n;
   Status ret;
   master_impl_->RunStep(call_options, request, response,

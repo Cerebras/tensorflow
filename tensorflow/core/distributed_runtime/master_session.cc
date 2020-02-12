@@ -1885,7 +1885,7 @@ Status MasterSession::PostRunCleanup(MasterSession::ReffedClientGraph* rcg,
 Status MasterSession::DoRunWithLocalExecution(
     CallOptions* opts, const RunStepRequestWrapper& req,
     MutableRunStepResponseWrapper* resp) {
-  HERE();
+  //HERE();
   VLOG(2) << "DoRunWithLocalExecution req: " << req.DebugString();
   PerStepState pss;
   pss.start_micros = Env::Default()->NowMicros();

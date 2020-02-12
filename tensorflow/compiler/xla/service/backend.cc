@@ -173,7 +173,7 @@ tensorflow::thread::ThreadPool* Backend::eigen_intra_op_thread_pool() const {
 
 StatusOr<se::StreamExecutor*> Backend::stream_executor(
     int device_ordinal) const {
-  HERE();
+  //HERE();
   if (device_ordinal < 0 ||
       device_ordinal > stream_executors_.back()->device_ordinal()) {
     return InvalidArgument(

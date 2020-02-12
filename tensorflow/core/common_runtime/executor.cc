@@ -2466,7 +2466,7 @@ void ExecutorState::ScheduleFinish() {
 
 void ExecutorState::Finish() {
   mu_.lock();
-  HERE();
+  //HERE();
   //std::cout << "ExecutorState::Finish()" << std::endl << std::flush;
   auto status = status_;
   auto done_cb = std::move(done_cb_);
