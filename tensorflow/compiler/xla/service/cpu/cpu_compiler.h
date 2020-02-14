@@ -30,6 +30,11 @@ limitations under the License.
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 
 namespace xla {
+
+namespace wse {
+  class WseCompiler;
+}
+
 namespace cpu {
 
 // This class wraps the configurability options that LLVM exposes including: the
@@ -167,6 +172,8 @@ class CpuCompiler : public LLVMCompiler {
       LLVMTargetMachineFeatures* target_machine_features);
 
   TF_DISALLOW_COPY_AND_ASSIGN(CpuCompiler);
+
+  std::unique_ptr<xla::wse::WseCompiler> wse_compiler_;
 };
 
 }  // namespace cpu

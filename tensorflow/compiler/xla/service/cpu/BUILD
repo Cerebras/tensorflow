@@ -74,8 +74,8 @@ cc_library(
 
 cc_library(
     name = "cpu_compiler",
-    srcs = ["cpu_compiler.cc"],
-    hdrs = ["cpu_compiler.h"],
+    srcs = ["cpu_compiler.cc", "wse_compiler.cc"],
+    hdrs = ["cpu_compiler.h", "wse_compiler.h"],
     copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":compiler_functor",

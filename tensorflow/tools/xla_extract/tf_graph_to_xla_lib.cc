@@ -243,7 +243,7 @@ se::Platform* getCompilePlatform() {
 
 }  // anonymous namespace
 
-xla::HloModuleProto RunHlo(std::unique_ptr<xla::HloModule>& hlo_module) {
+xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloModule>& hlo_module) {
     Status s;
     if (verbose) {
         LOG(INFO) << "xla args in correct order and matches fdef\n";
@@ -323,15 +323,16 @@ xla::HloModuleProto RunHlo(std::unique_ptr<xla::HloModule>& hlo_module) {
 
         if (!s.ok()) {
             LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
+            return s;
         }
 
         if (verbose) {
             LOG(INFO) << "Done HLO Optimization\n";
         }
-        hmod = hlo_module.get()->ToProto();
+        //hmod = hlo_module.get()->ToProto();
     }
 
-    return std::move(hmod);
+    return std::move(hlo_module);
 }
 
 xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
