@@ -89,7 +89,7 @@ public:
       for (int x = 0; x < depth_; ++x) {
         printf("  ");
       }
-      printf("ENTER[%lu (%s)]: %s\n", thread_id_, library_.c_str(), label.c_str());
+      printf("ENTER[%d (%s)]: %s\n", thread_id_, library_.c_str(), label.c_str());
       fflush(stdout);
       ++depth_;
     }
@@ -98,7 +98,7 @@ public:
       for (int x = 0; x < depth_; ++x) {
         printf("  ");
       }
-      printf("LEAVE[%lu (%s)]: %s\n", thread_id_, library_.c_str(), label_.c_str());
+      printf("LEAVE[%d (%s)]: %s\n", thread_id_, library_.c_str(), label_.c_str());
       fflush(stdout);
     }
 };
