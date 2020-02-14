@@ -118,7 +118,7 @@ limitations under the License.
 #include "tensorflow/core/platform/dynamic_annotations.h"
 
 namespace tensorflow {
-  xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloModule>& hlo_module);
+xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloModule>& hlo_module);
 }
 
 namespace xla {
