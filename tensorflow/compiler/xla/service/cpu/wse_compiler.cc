@@ -230,9 +230,9 @@ StatusOr<std::unique_ptr<HloModule>> RunHloPasses(
 }  // namespace xla
 
 static bool InitModule() {
-  xla::Compiler::RegisterCompilerFactory(
-      stream_executor::host::kHostPlatformId,
-      []() { return absl::make_unique<xla::wse::WseCompiler>(); });
+//  xla::Compiler::RegisterCompilerFactory(
+//      stream_executor::host::kHostPlatformId,
+//      []() { return absl::make_unique<xla::wse::WseCompiler>(); });
   return true;
 }
 static bool module_initialized = InitModule();
