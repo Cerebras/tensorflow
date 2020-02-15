@@ -123,8 +123,8 @@ StatusOr<std::unique_ptr<Executable>> LocalService::CompileExecutable(
     const XlaComputation& computation,
     const absl::Span<const Shape* const> argument_layouts,
     const ExecutableBuildOptions& build_options) {
-  HERE();
-  std::cout << "LocalService::CompileExecutable()" << ENDL;
+  //HERE();
+  //std::cout << "LocalService::CompileExecutable()" << ENDL;
   const HloModuleProto& proto = computation.proto();
   TF_RET_CHECK(proto.has_host_program_shape());
   ProgramShape program_shape(proto.host_program_shape());
