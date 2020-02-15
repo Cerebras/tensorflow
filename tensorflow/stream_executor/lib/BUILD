@@ -29,6 +29,7 @@ cc_library(
         ],
     ),
     hdrs = glob(["**/*.h"]),
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/core:lib",
         "//tensorflow/core:protos_all_cc",

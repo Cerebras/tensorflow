@@ -52,6 +52,7 @@ cc_library(
         "//tensorflow/core:stream_executor_no_cuda",
         "//tensorflow/stream_executor",
         "//tensorflow/tools/xla_extract:tf_graph_to_xla_lib",
+        "//tensorflow/stream_executor:wse_platform",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:span",
@@ -150,6 +151,7 @@ cc_library(
         "//tensorflow/compiler/xla/service:while_loop_invariant_code_motion",
         "//tensorflow/compiler/xla/service:while_loop_simplifier",
         "//tensorflow/compiler/xla/service:zero_sized_hlo_elimination",
+        "//tensorflow/stream_executor:wse_platform",
         "//tensorflow/compiler/xla/service/llvm_ir:llvm_util",  # fixdeps: keep
         "//tensorflow/core:lib",  # fixdeps: keep
         "//tensorflow/core:stream_executor_no_cuda",

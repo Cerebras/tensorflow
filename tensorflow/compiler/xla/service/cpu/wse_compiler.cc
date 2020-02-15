@@ -25,6 +25,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+#include "tensorflow/stream_executor/wse/wse_platform_id.h"
 #include "tensorflow/core/util/util.h"
 
 // IWYU pragma: no_include "llvm/Config/Disassemblers.def.inc"
@@ -210,7 +211,7 @@ bool WseCompiler::IsEnabled() const {
   return s && atoi(s) > 0;
 }
 
-StatusOr<std::unique_ptr<HloModule>> RunHloPasses(
+StatusOr<std::unique_ptr<HloModule>> WseCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module,
     se::StreamExecutor* stream_exec,
     se::DeviceMemoryAllocator* device_allocator) {
@@ -230,9 +231,9 @@ StatusOr<std::unique_ptr<HloModule>> RunHloPasses(
 }  // namespace xla
 
 static bool InitModule() {
-//  xla::Compiler::RegisterCompilerFactory(
-//      stream_executor::host::kHostPlatformId,
-//      []() { return absl::make_unique<xla::wse::WseCompiler>(); });
+  xla::Compiler::RegisterCompilerFactory(
+      stream_executor::wse::kWsePlatformId,
+      []() { return absl::make_unique<xla::wse::WseCompiler>(); });
   return true;
 }
 static bool module_initialized = InitModule();
