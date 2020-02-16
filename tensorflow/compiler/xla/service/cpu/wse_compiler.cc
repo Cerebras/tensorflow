@@ -261,7 +261,7 @@ StatusOr<std::unique_ptr<Executable>> WseCompiler::RunBackend(
   const int counter = save_msg_counter++;
   save_msg(module->ToProto(), "wse_hlom_out", counter);
 
-  return Status::OK();
+  return Status(tensorflow::error::UNIMPLEMENTED, "Cerebras WSE RunBackend() not yet implemented");
 }
 
 
