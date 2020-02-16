@@ -130,11 +130,11 @@ class CpuCompiler : public LLVMCompiler {
   ~CpuCompiler() override {}
 
   // Bring in
-  // StatusOr<std::vector<std::unique_ptr<Executable>>> Compile(
-  //     std::vector<std::unique_ptr<HloModule>> modules,
-  //     std::vector<std::vector<se::StreamExecutor*>>
-  //        stream_execs)
-  using LLVMCompiler::Compile;
+  StatusOr<std::vector<std::unique_ptr<Executable>>> Compile(
+        std::unique_ptr<HloModuleGroup> module_group,
+        std::vector<std::vector<se::StreamExecutor*>> stream_execs,
+        se::DeviceMemoryAllocator* device_allocator) override;
+  //using LLVMCompiler::Compile;
 
   StatusOr<std::unique_ptr<HloModule>> RunHloPasses(
       std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
@@ -174,6 +174,7 @@ class CpuCompiler : public LLVMCompiler {
   TF_DISALLOW_COPY_AND_ASSIGN(CpuCompiler);
 
   std::unique_ptr<xla::wse::WseCompiler> wse_compiler_;
+  std::unique_ptr<HloModule> wse_hlo_module_;
 };
 
 }  // namespace cpu

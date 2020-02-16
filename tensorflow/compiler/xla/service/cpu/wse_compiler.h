@@ -54,10 +54,7 @@ public:
 
   StatusOr<std::unique_ptr<Executable>> RunBackend(
       std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
-      se::DeviceMemoryAllocator* device_allocator) override {
-    assert(false && "Not implemented");
-    return Status::OK();
-  }
+      se::DeviceMemoryAllocator* device_allocator) override;
 
   StatusOr<std::vector<std::unique_ptr<AotCompilationResult>>>
   CompileAheadOfTime(std::unique_ptr<HloModuleGroup> module_group,
@@ -74,6 +71,10 @@ public:
   }
 
   bool IsEnabled() const;
+
+  // public utility functions
+  static std::unique_ptr<HloModuleGroup> copy(const HloModuleGroup& src);
+  static std::unique_ptr<HloModule> copy(const HloModule& src);
 
 private:
     // Initialize the LLVM target.

@@ -202,30 +202,68 @@ WseCompiler::WseCompiler() {
 //  LLVMInitializeAArch64Disassembler();
 }
 
+std::unique_ptr<HloModule> WseCompiler::copy(const HloModule& src) {
+  auto module_proto = src.ToProto();
+  DebugOptions debug_options;
+  StatusOr<HloModuleConfig> module_config = HloModule::CreateModuleConfigFromProto(
+      module_proto, debug_options);
+  StatusOr<std::unique_ptr<HloModule>> new_module = HloModule::CreateFromProto(module_proto,
+                                                                               module_config.ValueOrDie());
+  return std::unique_ptr<HloModule>(new_module.ValueOrDie().release());
+}
+
+std::unique_ptr<HloModuleGroup> WseCompiler::copy(const HloModuleGroup& src) {
+  auto dest_module_group_ptr = std::make_unique<HloModuleGroup>(src.name());
+  for (size_t i = 0; i < src.size(); ++i) {
+    const HloModule& src_module = src.module(i);
+    dest_module_group_ptr->push_back(copy(src_module));
+  }
+  return std::move(dest_module_group_ptr);
+}
+
 se::Platform::Id WseCompiler::PlatformId() const {
   return se::host::kHostPlatformId;
 }
 
 bool WseCompiler::IsEnabled() const {
+  if (!this) {
+    return false;
+  }
   const char *s = getenv("WSE_COMPILER_ENABLED");
   return s && atoi(s) > 0;
 }
 
+/**
+ * Run Cerebras version of HLO optimizations on the HloModule object
+ * @param module
+ * @return
+ */
 StatusOr<std::unique_ptr<HloModule>> WseCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module,
-    se::StreamExecutor* stream_exec,
-    se::DeviceMemoryAllocator* device_allocator) {
+    se::StreamExecutor* /*stream_exec*/,
+    se::DeviceMemoryAllocator* /*device_allocator*/) {
+  HERE();
+  return tensorflow::RunHlo(module);
+}
 
-  //HERE();
+/**
+ * Here is where we'll run the full Cerebras compile
+ * @param module
+ * @param stream_exec
+ * @param device_allocator
+ * @return
+ */
+StatusOr<std::unique_ptr<Executable>> WseCompiler::RunBackend(
+    std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
+    se::DeviceMemoryAllocator* device_allocator) {
+  HERE();
 
   const int counter = save_msg_counter++;
-  save_msg(module->ToProto(), "wse_hlom_in", counter);
-  StatusOr<std::unique_ptr<xla::HloModule>> wse_hlom = tensorflow::RunHlo(module);
-  if (wse_hlom.ok()) {
-    save_msg(wse_hlom.ValueOrDie()->ToProto(), "wse_hlom_out", counter);
-  }
-  return wse_hlom;
+  save_msg(module->ToProto(), "wse_hlom_out", counter);
+
+  return Status::OK();
 }
+
 
 }  // namespace wse
 }  // namespace xla

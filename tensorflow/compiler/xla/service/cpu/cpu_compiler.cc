@@ -546,26 +546,36 @@ Status CreateHloProfilingArtifacts(
   return Status::OK();
 }
 
-std::unique_ptr<HloModule> copy(const HloModule& src) {
-  HloModuleProto module_proto = src.ToProto();
-  DebugOptions debug_options;
-  StatusOr<HloModuleConfig> module_config = HloModule::CreateModuleConfigFromProto(
-      module_proto, debug_options);
-  StatusOr<std::unique_ptr<HloModule>> new_module = HloModule::CreateFromProto(module_proto,
-                                                                               module_config.ValueOrDie());
-  return std::unique_ptr<HloModule>(new_module.ValueOrDie().release());
-}
-
 }  // namespace
+
+StatusOr<std::vector<std::unique_ptr<Executable>>> CpuCompiler::Compile(
+  std::unique_ptr<HloModuleGroup> module_group,
+  std::vector<std::vector<se::StreamExecutor*>> stream_execs,
+  se::DeviceMemoryAllocator* device_allocator) {
+
+  if (wse_compiler_->IsEnabled()) {
+    // currently not called in pytorch path
+//    wse_compiler_->Compile(
+//        xla::wse::WseCompiler::copy(*module_group),
+//        stream_execs,
+//        device_allocator);
+  }
+  return LLVMCompiler::Compile(
+      std::move(module_group),
+      stream_execs,
+      device_allocator);
+}
 
 StatusOr<std::unique_ptr<HloModule>> CpuCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module, se::StreamExecutor* /*stream_exec*/,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
   HERE();
 
-  if (wse_compiler_.get() && wse_compiler_->IsEnabled()) {
-    std::unique_ptr<HloModule> wse_copy = copy(*module);
-    wse_compiler_->RunHloPasses(std::move(wse_copy), nullptr, nullptr);
+  if (wse_compiler_->IsEnabled()) {
+    wse_hlo_module_ = std::move(wse_compiler_->RunHloPasses(
+        xla::wse::WseCompiler::copy(*module),
+        nullptr,
+        nullptr).ValueOrDie());
   }
 
   std::unique_ptr<llvm::TargetMachine> jit_target_machine =
@@ -628,10 +638,17 @@ struct OrcJITPostCompilationHook {
 StatusOr<std::unique_ptr<Executable>> CpuCompiler::RunBackend(
     std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
-  //HERE();
+  HERE();
   VLOG(1) << "Compiling: " << module->name();
   XLA_SCOPED_LOGGING_TIMER(
       absl::StrFormat("Compiling [%s] for CPU using JIT", module->name()));
+
+  if (wse_compiler_->IsEnabled()) {
+    wse_compiler_->RunBackend(
+        std::move(wse_hlo_module_),
+        stream_exec,
+        nullptr);
+  }
 
   TF_RET_CHECK(stream_exec != nullptr);
   std::call_once(llvm_command_line_options_initialized,
