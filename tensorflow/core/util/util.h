@@ -105,4 +105,15 @@ public:
 
 #define HERE() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__))
 
+#include "external/protobuf_archive/src/google/protobuf/util/json_util.h"
+
+template <typename MSG>
+inline std::string m2j(const MSG& msg) {
+  std::string json;
+  google::protobuf::util::JsonPrintOptions op;
+  op.add_whitespace = true;
+  google::protobuf::util::MessageToJsonString(msg, &json, op);
+  return std::move(json);
+}
+
 #endif  // TENSORFLOW_CORE_UTIL_UTIL_H_
