@@ -170,6 +170,28 @@ bool save_msg(const MSG& msg, const std::string& file, int counter) {
   }
 }
 
+#define ENDL std::endl << std::flush
+
+void dump_inputs_outputs(const HloModule& hmod) {
+  const HloComputation *entry_comp = hmod.entry_computation();
+  std::cout << "******************" << ENDL;
+  for (tensorflow::int64 i = 0, n = entry_comp->num_parameters(); i < n; ++i) {
+    const HloInstruction *instr = entry_comp->parameter_instruction(i);
+    std::cout << "Input param " << instr->unique_id() << " -> "
+              << instr->name()
+              << ENDL;
+  }
+  std::cout << "==================" << ENDL;
+  const HloInstruction* root_instruction = entry_comp->root_instruction();
+  for (tensorflow::int64 i = 0, n = root_instruction->operand_count(); i < n; ++i) {
+    const HloInstruction *instr = root_instruction->operand(i);
+    std::cout << "Output " << instr->unique_id() << " -> "
+              << instr->name()
+              << ENDL;
+  }
+  std::cout << "******************" << ENDL;
+}
+
 }  // namespace (anonymous)
 
 WseCompiler::WseCompiler() {
@@ -243,6 +265,7 @@ StatusOr<std::unique_ptr<HloModule>> WseCompiler::RunHloPasses(
     se::StreamExecutor* /*stream_exec*/,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
   HERE();
+  dump_inputs_outputs(*module);
   return tensorflow::RunHlo(module);
 }
 

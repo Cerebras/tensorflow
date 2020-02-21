@@ -26,6 +26,7 @@ package_group(
 xla_proto_library(
     name = "hlo_proto",
     srcs = ["hlo.proto"],
+    copts = ["-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = ["//tensorflow/compiler/xla:xla_data_proto"],
 )

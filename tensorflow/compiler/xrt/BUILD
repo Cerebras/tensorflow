@@ -24,6 +24,7 @@ load(
 xla_proto_library(
     name = "xrt_proto",
     srcs = ["xrt.proto"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         "//tensorflow/compiler/tf2xla:host_compute_metadata_proto",
