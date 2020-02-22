@@ -31,6 +31,9 @@ limitations under the License.
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/protobuf.h"
 #include "tensorflow/core/platform/types.h"
+#include "tensorflow/core/util/util.h"
+
+static bool verbose = false;
 
 namespace xla {
 
@@ -210,6 +213,9 @@ StatusOr<Literal> Client::ComputeConstant(const XlaComputation& computation,
 }
 
 StatusOr<XlaComputation> Client::LoadSnapshot(const HloSnapshot& module) {
+  if (verbose) {
+    std::cout << m2j(module) << std::endl;
+  }
   TF_RET_CHECK(module.has_hlo() && module.hlo().has_hlo_module());
   return XlaComputation(module.hlo().hlo_module());
 }
