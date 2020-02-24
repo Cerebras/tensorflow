@@ -1,3 +1,9 @@
+# Cerebras buildroot toolchains. Set --cpu=[k8,arm64-v8a] to select either the
+# x86_64 or aarch64 buildroot toolchain. Whatever gcc is in the PATH is used to
+# compile the host tools.
+build:cerebras --crosstool_top=//third_party/toolchains/cerebras:buildroot
+build:cerebras --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
+
 # Android configs. Bazel needs to have --cpu and --fat_apk_cpu both set to the
 # target CPU to build transient dependencies correctly. See
 # https://docs.bazel.build/versions/master/user-manual.html#flag--fat_apk_cpu
