@@ -116,4 +116,9 @@ inline std::string m2j(const MSG& msg) {
   return std::move(json);
 }
 
+/**
+ * Convenient endl with flush for debugging
+ */
+#define ENDL std::endl << std::flush
+
 #endif  // TENSORFLOW_CORE_UTIL_UTIL_H_
