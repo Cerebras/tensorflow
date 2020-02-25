@@ -664,6 +664,12 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
 
+  if (save_messages) {
+    FILE *f = fopen("xla_module.pbtxt", "wb");
+    fwrite(out_graph->data(), out_graph->size(), 1, f);
+    fclose(f);
+  }
+
   if (get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
       std::cout << "XLA Extraction Complete\n";
   }
