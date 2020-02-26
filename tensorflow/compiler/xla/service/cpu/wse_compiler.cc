@@ -170,8 +170,6 @@ bool save_msg(const MSG& msg, const std::string& file, int counter) {
   }
 }
 
-#define ENDL std::endl << std::flush
-
 void dump_inputs_outputs(const HloModule& hmod) {
   const HloComputation *entry_comp = hmod.entry_computation();
   std::cout << "******************" << ENDL;

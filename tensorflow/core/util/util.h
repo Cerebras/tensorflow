@@ -79,13 +79,17 @@ public:
         s = s0;
         s += "::";
       }
-      s += s1;
-      s += " (";
-      s += s2;
-      s += ")";
+      if (s1) {
+        s += s1;
+      }
+      if (s2 && *s2) {
+        s += " (";
+        s += s2;
+        s += ")";
+      }
       return s;
     }
-    inline EnterLeave(const std::string label) : label_(label), thread_id_(syscall(SYS_gettid)) {
+    inline EnterLeave(const std::string& label) : label_(label), thread_id_(syscall(SYS_gettid)) {
       for (int x = 0; x < depth_; ++x) {
         printf("  ");
       }
