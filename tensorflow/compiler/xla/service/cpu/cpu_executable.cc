@@ -269,7 +269,7 @@ StatusOr<ScopedShapedBuffer> CpuExecutable::ExecuteOnStream(
     const ServiceExecutableRunOptions* run_options,
     absl::Span<const ShapedBuffer* const> arguments,
     HloExecutionProfile* hlo_execution_profile) {
-  HERE();
+  //HERE();
   TF_ASSIGN_OR_RETURN(
       auto result,
       ExecuteAsyncOnStreamImpl(run_options, arguments, hlo_execution_profile));

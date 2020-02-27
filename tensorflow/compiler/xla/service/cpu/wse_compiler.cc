@@ -141,8 +141,6 @@ static std::atomic<int> save_msg_counter{0};
 
 template <typename MSG>
 bool save_msg(const MSG& msg, const std::string& file, int counter) {
-  static int save_msg_counter = 0;
-
   const std::string json = msg_to_json(msg);
   const std::string counter_str = std::to_string(counter);
   const std::string json_file = file + "_" + counter_str + ".json";
@@ -175,16 +173,18 @@ void dump_inputs_outputs(const HloModule& hmod) {
   std::cout << "******************" << ENDL;
   for (tensorflow::int64 i = 0, n = entry_comp->num_parameters(); i < n; ++i) {
     const HloInstruction *instr = entry_comp->parameter_instruction(i);
-    std::cout << "Input param " << instr->unique_id() << " -> "
+    std::cout << "WseCompiler: Input param " << instr->unique_id() << " -> "
               << instr->name()
+              << ", shape=" << instr->shape()
               << ENDL;
   }
   std::cout << "==================" << ENDL;
   const HloInstruction* root_instruction = entry_comp->root_instruction();
   for (tensorflow::int64 i = 0, n = root_instruction->operand_count(); i < n; ++i) {
     const HloInstruction *instr = root_instruction->operand(i);
-    std::cout << "Output " << instr->unique_id() << " -> "
+    std::cout << "WseCompiler: Output " << instr->unique_id() << " -> "
               << instr->name()
+              << ", shape=" << instr->shape()
               << ENDL;
   }
   std::cout << "******************" << ENDL;
