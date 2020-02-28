@@ -242,7 +242,8 @@ std::unique_ptr<HloModuleGroup> WseCompiler::copy(const HloModuleGroup& src) {
 }
 
 se::Platform::Id WseCompiler::PlatformId() const {
-  return se::host::kHostPlatformId;
+  //return se::host::kHostPlatformId;
+  return se::wse::kWsePlatformId;
 }
 
 bool WseCompiler::IsEnabled() const {
@@ -264,6 +265,7 @@ StatusOr<std::unique_ptr<HloModule>> WseCompiler::RunHloPasses(
     se::DeviceMemoryAllocator* /*device_allocator*/) {
   HERE();
   save_msg(module->ToProto(), "wse_hlom_in", save_msg_counter);
+  //raise(SIGTRAP);
   dump_inputs_outputs(*module);
   return tensorflow::RunHlo(module);
 }
