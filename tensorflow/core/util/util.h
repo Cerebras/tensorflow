@@ -82,13 +82,15 @@ enum Code {
 };
 
 class Modifier {
-  Code code;
+  const Code code;
+  const bool bright;
 public:
-  Modifier(Color::Code pCode) : code(pCode) {}
+  Modifier(Color::Code pCode, const bool is_bright=true)
+    : code(pCode), bright(is_bright) {}
 
   friend std::ostream &
   operator<<(std::ostream &os, const Modifier &mod) {
-    return os << "\033[" << mod.code << "m";
+    return os << "\033[" << (mod.bright ? "1;" : "") << mod.code << "m";
   }
 };
 }  // namespace Color
