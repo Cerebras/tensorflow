@@ -21,6 +21,7 @@ limitations under the License.
 
 __thread int EnterLeave::depth_ = 0;
 const std::string EnterLeave::library_ = "tf";
+const Color::Code EnterLeave::library_color_ = Color::FG_YELLOW;
 
 namespace tensorflow {
 

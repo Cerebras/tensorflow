@@ -63,6 +63,51 @@ bool DisableMKL();
 
 }  // namespace tensorflow
 
+#include <ostream>
+namespace Color {
+enum Code {
+  FG_RESET = 0,
+  FG_RED = 31,
+  FG_GREEN = 32,
+  FG_YELLOW = 33,
+  FG_BLUE = 34,
+  FG_MAGENTA = 35,
+  FG_CYAN = 36,
+  FG_WHITE = 37,
+  FG_DEFAULT = 39,
+  BG_RED = 41,
+  BG_GREEN = 42,
+  BG_BLUE = 44,
+  BG_DEFAULT = 49
+};
+
+class Modifier {
+  Code code;
+public:
+  Modifier(Color::Code pCode) : code(pCode) {}
+
+  friend std::ostream &
+  operator<<(std::ostream &os, const Modifier &mod) {
+    return os << "\033[" << mod.code << "m";
+  }
+};
+}  // namespace Color
+
+class ColorScope {
+  std::ostream& os_;
+public:
+  inline ColorScope(std::ostream& os, Color::Code pCode) : os_(os) {
+    Color::Modifier mod(pCode);
+    os << mod;
+  }
+  ColorScope(Color::Code pCode) : os_(std::cout) {
+    Color::Modifier mod(pCode);
+    os_ << mod;
+  }
+  ~ColorScope() {
+    os_ << Color::Modifier(Color::FG_DEFAULT);
+  }
+};
 
 #include <sys/syscall.h>
 #include <zconf.h>
@@ -70,8 +115,10 @@ bool DisableMKL();
 class EnterLeave {
     static __thread int depth_;
     static const std::string library_;
+    static const Color::Code library_color_;
     const std::string label_;
     const pid_t thread_id_;
+    const bool both_;
 public:
     static std::string concat(const char *s0, const char *s1, const char *s2) {
       std::string s;
@@ -89,25 +136,30 @@ public:
       }
       return s;
     }
-    inline EnterLeave(const std::string& label) : label_(label), thread_id_(syscall(SYS_gettid)) {
+    inline EnterLeave(const std::string& label, bool both=true) : label_(label), thread_id_(syscall(SYS_gettid)), both_(both) {
       for (int x = 0; x < depth_; ++x) {
         printf("  ");
       }
-      printf("ENTER[%d (%s)]: %s\n", thread_id_, library_.c_str(), label.c_str());
+      ColorScope color_scope(library_color_);
+      printf("%s[%d (%s)]: %s\n", both_ ? "ENTER" : "HERE", thread_id_, library_.c_str(), label.c_str());
       fflush(stdout);
       ++depth_;
     }
     inline ~EnterLeave() {
       --depth_;
-      for (int x = 0; x < depth_; ++x) {
-        printf("  ");
+      if (both_) {
+        ColorScope color_scope(library_color_);
+        for (int x = 0; x < depth_; ++x) {
+          printf("  ");
+        }
+        printf("LEAVE[%d (%s)]: %s\n", thread_id_, library_.c_str(), label_.c_str());
+        fflush(stdout);
       }
-      printf("LEAVE[%d (%s)]: %s\n", thread_id_, library_.c_str(), label_.c_str());
-      fflush(stdout);
     }
 };
 
 #define HERE() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__))
+#define HEREX() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__), false)
 
 #include "external/protobuf_archive/src/google/protobuf/util/json_util.h"
 
@@ -117,7 +169,7 @@ inline std::string m2j(const MSG& msg) {
   google::protobuf::util::JsonPrintOptions op;
   op.add_whitespace = true;
   google::protobuf::util::MessageToJsonString(msg, &json, op);
-  return std::move(json);
+  return json;
 }
 
 /**
