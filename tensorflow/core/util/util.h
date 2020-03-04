@@ -98,16 +98,15 @@ public:
 class ColorScope {
   std::ostream& os_;
 public:
-  inline ColorScope(std::ostream& os, Color::Code pCode) : os_(os) {
-    Color::Modifier mod(pCode);
+  inline ColorScope(std::ostream& os, Color::Code pCode, bool bright=true) : os_(os) {
+    Color::Modifier mod(pCode, bright);
     os << mod;
   }
-  ColorScope(Color::Code pCode) : os_(std::cout) {
-    Color::Modifier mod(pCode);
-    os_ << mod;
+  ColorScope(Color::Code pCode, bool bright=true) : os_(std::cout) {
+    os_ << Color::Modifier(pCode, bright) << std::flush;
   }
   ~ColorScope() {
-    os_ << Color::Modifier(Color::FG_DEFAULT);
+    os_ << Color::Modifier(Color::FG_DEFAULT) << std::flush;
   }
 };
 

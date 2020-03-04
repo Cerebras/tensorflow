@@ -569,7 +569,6 @@ StatusOr<std::vector<std::unique_ptr<Executable>>> CpuCompiler::Compile(
 StatusOr<std::unique_ptr<HloModule>> CpuCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module, se::StreamExecutor* /*stream_exec*/,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
-  HERE();
 
   if (wse_compiler_->IsEnabled()) {
     wse_hlo_module_ = std::move(wse_compiler_->RunHloPasses(
@@ -638,7 +637,6 @@ struct OrcJITPostCompilationHook {
 StatusOr<std::unique_ptr<Executable>> CpuCompiler::RunBackend(
     std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
-  HERE();
   VLOG(1) << "Compiling: " << module->name();
   XLA_SCOPED_LOGGING_TIMER(
       absl::StrFormat("Compiling [%s] for CPU using JIT", module->name()));
@@ -783,7 +781,6 @@ StatusOr<std::unique_ptr<Executable>> CpuCompiler::RunBackend(
 StatusOr<std::vector<std::unique_ptr<AotCompilationResult>>>
 CpuCompiler::CompileAheadOfTime(std::unique_ptr<HloModuleGroup> module_group,
                                 const AotCompilationOptions& aot_options) {
-  HERE();
   TF_RET_CHECK(!module_group->empty());
   std::vector<std::unique_ptr<HloModule>> modules =
       module_group->ConsumeModules();

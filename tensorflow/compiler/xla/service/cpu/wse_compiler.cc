@@ -280,7 +280,7 @@ StatusOr<std::unique_ptr<HloModule>> WseCompiler::RunHloPasses(
 StatusOr<std::unique_ptr<Executable>> WseCompiler::RunBackend(
     std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
     se::DeviceMemoryAllocator* device_allocator) {
-  HERE();
+  //HERE();
   save_msg(module->ToProto(), "wse_hlom_out", save_msg_counter);
   ++save_msg_counter;
   return Status(tensorflow::error::UNIMPLEMENTED, "Cerebras WSE RunBackend() not yet implemented");
