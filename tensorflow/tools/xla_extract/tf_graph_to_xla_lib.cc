@@ -666,8 +666,10 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
 
   if (save_messages) {
     FILE *f = fopen("xla_module.pbtxt", "wb");
+    assert(f);
     fwrite(out_graph->data(), out_graph->size(), 1, f);
     fclose(f);
+    save_msg(hmod, "xla_module.json");
   }
 
   if (get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {

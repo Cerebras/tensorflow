@@ -120,6 +120,7 @@ class EnterLeave {
     const std::string label_;
     const pid_t thread_id_;
     const bool both_;
+    static std::mutex mtx_;
 public:
     static std::string concat(const char *s0, const char *s1, const char *s2) {
       std::string s;
@@ -138,6 +139,7 @@ public:
       return s;
     }
     inline EnterLeave(const std::string& label, bool both=true) : label_(label), thread_id_(syscall(SYS_gettid)), both_(both) {
+      std::lock_guard<std::mutex> lk(mtx_);
       for (int x = 0; x < depth_; ++x) {
         printf("  ");
       }
@@ -147,6 +149,7 @@ public:
       ++depth_;
     }
     inline ~EnterLeave() {
+      std::lock_guard<std::mutex> lk(mtx_);
       --depth_;
       if (both_) {
         ColorScope color_scope(library_color_);
