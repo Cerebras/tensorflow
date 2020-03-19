@@ -24,6 +24,7 @@ limitations under the License.
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <memory>
 
 #include "tensorflow/core/util/util.h"
 
@@ -157,7 +158,7 @@ CpuCompiler::CpuCompiler() {
   (void)llvm_initialized;
 
   // Temporary: build wse compilder as tag-along member which we'll duplicate actions to
-  wse_compiler_ = std::make_unique<xla::wse::WseCompiler>();
+  wse_compiler_ = absl::make_unique<xla::wse::WseCompiler>();
 }
 
 /* static */ void CpuCompiler::InitializeLLVMTarget() {
@@ -518,7 +519,6 @@ Status CreateHloProfilingArtifacts(
         computation_to_profile_idx,
     std::unique_ptr<HloProfileIndexMap>* hlo_profile_index_map,
     std::unique_ptr<HloProfilePrinterData>* hlo_profile_printer_data) {
-  //HERE();
   *hlo_profile_index_map = absl::make_unique<HloProfileIndexMap>(module);
   const HloComputation& entry_computation = *module.entry_computation();
 

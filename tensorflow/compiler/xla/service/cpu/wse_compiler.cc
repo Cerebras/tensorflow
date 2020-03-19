@@ -24,6 +24,7 @@ limitations under the License.
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <memory>
 
 #include "tensorflow/stream_executor/wse/wse_platform_id.h"
 #include "tensorflow/core/util/util.h"
@@ -232,14 +233,14 @@ std::unique_ptr<HloModule> WseCompiler::copy(const HloModule& src) {
   return std::unique_ptr<HloModule>(new_module.ValueOrDie().release());
 }
 
-std::unique_ptr<HloModuleGroup> WseCompiler::copy(const HloModuleGroup& src) {
-  auto dest_module_group_ptr = std::make_unique<HloModuleGroup>(src.name());
-  for (size_t i = 0; i < src.size(); ++i) {
-    const HloModule& src_module = src.module(i);
-    dest_module_group_ptr->push_back(copy(src_module));
-  }
-  return std::move(dest_module_group_ptr);
-}
+//std::unique_ptr<HloModuleGroup> WseCompiler::copy(const HloModuleGroup& src) {
+//  auto dest_module_group_ptr = absl::make_unique<HloModuleGroup>(src.name());
+//  for (size_t i = 0; i < src.size(); ++i) {
+//    const HloModule& src_module = src.module(i);
+//    dest_module_group_ptr->push_back(copy(src_module));
+//  }
+//  return std::move(dest_module_group_ptr);
+//}
 
 se::Platform::Id WseCompiler::PlatformId() const {
   //return se::host::kHostPlatformId;
