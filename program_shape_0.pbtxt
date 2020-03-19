@@ -1,0 +1,81 @@
+parameters {
+  element_type: F16
+  dimensions: 1
+  dimensions: 784
+  layout {
+    minor_to_major: 1
+    minor_to_major: 0
+    format: DENSE
+  }
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+}
+parameters {
+  element_type: F16
+  dimensions: 1
+  dimensions: 10
+  layout {
+    minor_to_major: 1
+    minor_to_major: 0
+    format: DENSE
+  }
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+}
+parameters {
+  element_type: F16
+  dimensions: 10
+  layout {
+    minor_to_major: 0
+    format: DENSE
+  }
+  is_dynamic_dimension: false
+}
+parameters {
+  element_type: F16
+  dimensions: 256
+  dimensions: 10
+  layout {
+    minor_to_major: 1
+    minor_to_major: 0
+    format: DENSE
+  }
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+}
+parameters {
+  element_type: F16
+  dimensions: 256
+  layout {
+    minor_to_major: 0
+    format: DENSE
+  }
+  is_dynamic_dimension: false
+}
+parameters {
+  element_type: F16
+  dimensions: 784
+  dimensions: 256
+  layout {
+    minor_to_major: 1
+    minor_to_major: 0
+    format: DENSE
+  }
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+}
+result {
+  element_type: TUPLE
+  tuple_shapes {
+    element_type: F16
+    layout {
+      format: DENSE
+    }
+  }
+}
+parameter_names: "arg0"
+parameter_names: "arg1"
+parameter_names: "arg2"
+parameter_names: "arg3"
+parameter_names: "arg4"
+parameter_names: "arg5"
