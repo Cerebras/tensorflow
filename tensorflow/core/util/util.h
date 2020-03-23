@@ -19,6 +19,9 @@ limitations under the License.
 #include "tensorflow/core/framework/tensor_shape.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
 
+#include <string>
+#include <stdio.h>
+
 namespace tensorflow {
 
 // If op_name has '/' in it, then return everything before the first '/'.
@@ -180,5 +183,31 @@ inline std::string m2j(const MSG& msg) {
  * Convenient endl with flush for debugging
  */
 #define ENDL std::endl << std::flush
+
+template <typename MSG>
+std::string msg_to_json(const MSG& msg) {
+  std::string json;
+  google::protobuf::util::JsonPrintOptions op;
+  op.add_whitespace = true;
+  google::protobuf::util::MessageToJsonString(msg, &json, op);
+  return std::move(json);
+}
+
+template <typename MSG>
+bool save_msg(const MSG& msg, const std::string& file) {
+  const std::string json = msg_to_json(msg);
+
+  FILE* f = fopen(file.c_str(), "wt");
+  if (f) {
+    fwrite(json.c_str(), json.size(), sizeof(std::string::value_type), f);
+    fclose(f);
+    return true;
+  } else {
+    std::cerr << "Could not open file: " << file
+              << ", reason: " << strerror(errno) << std::endl
+              << std::flush;
+    return false;
+  }
+}
 
 #endif  // TENSORFLOW_CORE_UTIL_UTIL_H_
