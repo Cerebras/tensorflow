@@ -12,6 +12,7 @@
 #include "tensorflow/compiler/xla/client/client_library.h"
 #include "tensorflow/core/common_runtime/graph_execution_state.h"
 #include "tensorflow/core/platform/env.h"
+#include "tensorflow/core/framework/function.h"
 #include "tensorflow/core/platform/logging.h"
 
 #include "tensorflow/compiler/xla/service/hlo_module_config.h"
@@ -375,7 +376,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   // Usually there is only one cluster, but for some graphs (e.g. LSTM) there
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
-  FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
+  tensorflow::FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
   if (save_messages) {
     save_msg(fdef_lib , "FunctionDefLibrary.json");
@@ -407,21 +408,32 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     }
   }
 
-  FunctionDef& fdef = *fdef_iter;
+  const FunctionDef& fdef = *fdef_iter;
 
   if (save_messages) {
     save_msg(fdef, "fdef.json");
   }
 
+  raise(SIGTRAP);
+
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
-  if (verbose) {
-    LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
+  if (get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
+    LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << std::endl;
     LOG(INFO) << fdef.signature().name() << "\n";
-    LOG(INFO) << "xla args number:" << xla_args.size() << "\n";
+    LOG(INFO) << "xla args number:" << xla_args.size() << std::endl;
     LOG(INFO) << "fdef_args number:" << fdef.signature().input_arg().size()
-              << "\n";
+              << std::endl;
+    // fdef.ret:
+    // A mapping from the output arg names from `signature` to the
+    // outputs from `node_def` that should be returned by the function.
+    LOG(INFO) << "fdef output mapping signature -> node_def: " << std::endl;
+    for (std::pair<std::string, std::string> signature_to_node_def_output : fdef.ret()) {
+      LOG(INFO) << "\t\"" << signature_to_node_def_output.first << "\" -> \""
+                << signature_to_node_def_output.second << "\""
+                << std::endl;
+    }
   }
 
   // compares fdef_args(ground truth) with xla_args
@@ -654,7 +666,6 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
                                 const std::string& target_node,
                                 std::string* out_graph) {
   GraphDef gdef;
-
   gdef.ParseFromString(graph_def_msg);
 
   if (save_messages) {
