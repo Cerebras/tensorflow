@@ -72,6 +72,7 @@ GraphExecutionState::GraphExecutionState(
   original_graph_def_.Swap(graph_def);
   // TODO(mrry): Publish placement visualizations or handle the log
   // placement option.
+  save_msg(flib_def_->ToProto(), "err0.json");
 }
 
 GraphExecutionState::~GraphExecutionState() {
@@ -89,14 +90,22 @@ GraphExecutionState::~GraphExecutionState() {
   std::unique_ptr<GraphExecutionState> ret(
       new GraphExecutionState(graph_def, options));
 
+  save_msg(ret->flib_def_->ToProto(), "ges_1.json");
+
   TF_RETURN_IF_ERROR(
       AddDefaultAttrsToGraphDef(&ret->original_graph_def_, *ret->flib_def_, 0));
+
+  save_msg(ret->flib_def_->ToProto() , "ges_2.json");
+
   // TODO(mrry): Refactor InitBaseGraph() so that we don't have to
   // pass an empty BuildGraphOptions (that isn't going to be used when
   // place_pruned_graph is false).
   if (!ret->session_options_->config.graph_options().place_pruned_graph()) {
     TF_RETURN_IF_ERROR(ret->InitBaseGraph(BuildGraphOptions()));
   }
+
+  save_msg(ret->flib_def_->ToProto() , "ges_3.json");
+
   *out_state = std::move(ret);
   return Status::OK();
 }
@@ -546,11 +555,17 @@ Status GraphExecutionState::PruneGraph(
 }
 
 Status GraphExecutionState::InitBaseGraph(const BuildGraphOptions& options) {
+
+  save_msg(flib_def_->ToProto() , "init_1.json");
+
   const GraphDef* graph_def = &original_graph_def_;
 
   std::unique_ptr<Graph> new_graph(new Graph(OpRegistry::Global()));
   GraphConstructorOptions opts;
   TF_RETURN_IF_ERROR(ConvertGraphDefToGraph(opts, *graph_def, new_graph.get()));
+
+  save_msg(flib_def_->ToProto() , "init_2.json");
+
   if (session_options_ &&
       session_options_->config.graph_options().place_pruned_graph()) {
     // Rewrite the graph before placement.
@@ -562,6 +577,8 @@ Status GraphExecutionState::InitBaseGraph(const BuildGraphOptions& options) {
   // Save stateful placements before placing.
   RestoreStatefulNodes(new_graph.get());
 
+  save_msg(flib_def_->ToProto() , "init_2a.json");
+
   GraphOptimizationPassOptions optimization_options;
   optimization_options.session_handle = session_handle_;
   optimization_options.session_options = session_options_;
@@ -572,6 +589,8 @@ Status GraphExecutionState::InitBaseGraph(const BuildGraphOptions& options) {
   TF_RETURN_IF_ERROR(OptimizationPassRegistry::Global()->RunGrouping(
       OptimizationPassRegistry::PRE_PLACEMENT, optimization_options));
 
+  save_msg(flib_def_->ToProto() , "init_2b.json");
+
   Placer placer(new_graph.get(), "", flib_def_.get(), device_set_,
                 /* default_device= */ nullptr,
                 session_options_ == nullptr ||
@@ -579,10 +598,12 @@ Status GraphExecutionState::InitBaseGraph(const BuildGraphOptions& options) {
                 session_options_ != nullptr &&
                     session_options_->config.log_device_placement());
   // TODO(mrry): Consider making the Placer cancelable.
+  save_msg(flib_def_->ToProto() , "init_a.json");
   TF_RETURN_IF_ERROR(placer.Run());
-
+  save_msg(flib_def_->ToProto() , "init_b.json");
   TF_RETURN_IF_ERROR(OptimizationPassRegistry::Global()->RunGrouping(
       OptimizationPassRegistry::POST_PLACEMENT, optimization_options));
+  save_msg(flib_def_->ToProto() , "init_c.json");
 
   for (const Node* n : new_graph->nodes()) {
     VLOG(2) << "Mapping " << n->name() << " to " << n->cost_id();
@@ -590,6 +611,9 @@ Status GraphExecutionState::InitBaseGraph(const BuildGraphOptions& options) {
   }
 
   SaveStatefulNodes(new_graph.get());
+
+  save_msg(flib_def_->ToProto() , "init_3.json");
+
   graph_ = new_graph.release();
   return Status::OK();
 }
@@ -597,6 +621,9 @@ Status GraphExecutionState::InitBaseGraph(const BuildGraphOptions& options) {
 Status GraphExecutionState::OptimizeGraph(
     const BuildGraphOptions& options, std::unique_ptr<Graph>* optimized_graph,
     std::unique_ptr<FunctionLibraryDefinition>* optimized_flib) {
+
+  save_msg(flib_def_->ToProto(), "errA.json");
+
 #ifndef IS_MOBILE_PLATFORM
   if (session_options_->config.graph_options().place_pruned_graph()) {
     return errors::InvalidArgument("Can't optimize a pruned graph");
@@ -617,6 +644,7 @@ Status GraphExecutionState::OptimizeGraph(
 
     // TODO(b/114748242): Add a unit test to test this bug fix.
     if (flib_def_) {
+      save_msg(flib_def_->ToProto(), "err2.json");
       *item.graph.mutable_library() = flib_def_->ToProto();
     }
 
@@ -697,6 +725,8 @@ Status GraphExecutionState::OptimizeGraph(
     TF_RETURN_IF_ERROR(grappler::RunMetaOptimizer(
         item, session_options_->config, cpu_device, &cluster, &new_graph));
 
+    save_msg(flib_def_->ToProto(), "err3.json");
+
     // Merge optimized graph function library with an original library.
     // Optimized graph might have new functions specialized for it's
     // instantiation context (see Grappler function optimizer), and modified
@@ -754,6 +784,9 @@ Status GraphExecutionState::BuildGraph(const BuildGraphOptions& options,
   std::unique_ptr<FunctionLibraryDefinition> optimized_flib;
 
   Status s = OptimizeGraph(options, &optimized_graph, &optimized_flib);
+
+  save_msg(optimized_flib->ToProto(), "optimized_flib.json");
+
   if (!s.ok()) {
     VLOG(2) << "Grappler optimization failed. Error: " << s.error_message();
     // Simply copy the original graph and the function library if we couldn't

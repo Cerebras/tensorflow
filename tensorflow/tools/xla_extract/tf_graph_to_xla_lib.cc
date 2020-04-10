@@ -73,8 +73,8 @@ int get_env_int(const char *s, const int dflt) {
   return dflt;
 }
 
-const bool save_messages = get_env_bool("XLA_SAVE_MESSAGES", false);
-const bool verbose = get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
+const bool save_messages = true; //get_env_bool("XLA_SAVE_MESSAGES", false);
+const bool verbose = true; // get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
 
 template <typename MSG>
 std::string msg_to_json(const MSG& msg) {
@@ -414,8 +414,6 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     save_msg(fdef, "fdef.json");
   }
 
-  raise(SIGTRAP);
-
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
@@ -434,6 +432,27 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                 << signature_to_node_def_output.second << "\""
                 << std::endl;
     }
+  }
+
+  std::list<std::string> output_order;  // TODO: Should return this
+  const OpDef& signature = fdef.signature();
+  assert(signature.output_arg_size() == fdef.ret_size());
+  for (size_t i = 0, n = signature.output_arg_size(); i < n; ++i) {
+    const ::tensorflow::OpDef_ArgDef& arg = signature.output_arg(i);
+    const std::string& output_name = arg.name();
+    const auto iter = fdef.ret().find(output_name);
+    assert(iter != fdef.ret().end());
+    std::string incoming_output_name = iter->second;
+    static const std::string output_str = ":output:";
+    std::size_t output_pos = incoming_output_name.find_last_of(output_str);
+    if (output_pos != std::string::npos) {
+      const std::string fixname1 = incoming_output_name.substr(0, output_pos - (output_str.size() - 1));
+      const std::string fixname2 = incoming_output_name.substr(output_pos);
+      incoming_output_name = fixname1;
+      incoming_output_name += fixname2;
+    }
+    std::cout << "Incoming output name: " << incoming_output_name << std::endl << std::flush;
+    output_order.push_back(incoming_output_name);
   }
 
   // compares fdef_args(ground truth) with xla_args
@@ -663,8 +682,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 }
 
 Status xla_extract_via_strings(const std::string& graph_def_msg,
-                                const std::string& target_node,
-                                std::string* out_graph) {
+                               const std::string& target_node,
+                               std::string* out_graph) {
   GraphDef gdef;
   gdef.ParseFromString(graph_def_msg);
 

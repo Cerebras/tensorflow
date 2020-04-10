@@ -120,6 +120,7 @@ Status GraphToFunctionDef(const Graph& graph, const string& name,
   NodeNameMapping node_names;
 
   for (Node const* node : graph.op_nodes()) {
+    std::cout << "Looking at node: " << node->name() << std::endl << std::flush;
     if (node->IsArg()) {
       int index;
       DataType type;
