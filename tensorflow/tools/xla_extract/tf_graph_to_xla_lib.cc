@@ -196,7 +196,7 @@ void InitializeDevices(const SessionOptions& options, std::unique_ptr<DeviceMgr>
                 << std::flush;
     }
     // GPU devices alter the client graph in an incompatible way to the curent implementation
-    if (device_type == DEVICE_XLA_CPU || device_type == "CPU") {
+    if (device_type == DEVICE_XLA_CPU || device_type == "CPU" || device_type == DEVICE_CPU_XLA_JIT) {
       dev_set->AddDevice(d);
       d->op_segment()->AddHold("HOLD");
       const std::string& device_name = d->name();
@@ -347,6 +347,8 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
   InitializeDevices(sess_options, device_mgr, &dev_set);
+
+  const std::string dtype = dev_set.client_device()->device_type();
 
   // Local copy for modification
   GraphDef gdef = in_graph;
@@ -521,6 +523,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   xla::HloModuleProto hmod;
   {
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
+    //DeviceType device_type(dtype);
     XlaCompiler::Options compile_options;
 
     se::Platform *platform = getCompilePlatform();
@@ -544,13 +547,22 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
-    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
-
+    if (!s.ok()) {
+      std::string msg = "Couldn't compile to xla: ";
+      msg += s.error_message();
+      LOG(ERROR) << msg;
+      if (!result.computation.get()) {
+        throw std::runtime_error(msg);
+      }
+    }
 
     if (verbose) {
       LOG(INFO) << "Done Compiling";
     }
-    hmod.CopyFrom(result.computation->proto());
+
+    if (result.computation.get()) {
+      hmod.CopyFrom(result.computation->proto());
+    }
 
     if (save_messages) {
       save_msg(hmod, "hmod_in.json");
@@ -687,9 +699,9 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   GraphDef gdef;
   gdef.ParseFromString(graph_def_msg);
 
-  if (save_messages) {
+  //if (save_messages) {
     save_msg(gdef, "graph.json");
-  }
+  //}
 
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
