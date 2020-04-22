@@ -175,6 +175,7 @@ LocalExecutable::RunHelper(
 StatusOr<ScopedShapedBuffer> LocalExecutable::Run(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
+  HERE();
   TF_ASSIGN_OR_RETURN(auto options_and_stream,
                       RunHelper(arguments, run_options));
 
@@ -188,6 +189,7 @@ StatusOr<ScopedShapedBuffer> LocalExecutable::Run(
 StatusOr<ScopedShapedBuffer> LocalExecutable::RunAsync(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
+  HERE();
   TF_ASSIGN_OR_RETURN(auto options_and_stream,
                       RunHelper(arguments, run_options));
   return executable_->ExecuteAsyncOnStream(&options_and_stream.first,
@@ -222,6 +224,7 @@ Status LocalExecutable::RecordArguments(
 
 Status LocalExecutable::RecordResult(const ShapedBuffer* result,
                                      HloSnapshot* hlo_snapshot) {
+  HERE();
   hlo_snapshot->clear_result();
   TF_ASSIGN_OR_RETURN(Literal literal, LiteralFromShapedBuffer(*result));
   *hlo_snapshot->mutable_result() = literal.ToProto();
