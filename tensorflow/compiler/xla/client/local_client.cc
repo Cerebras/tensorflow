@@ -26,6 +26,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/service/source_map_util.h"
 #include "tensorflow/compiler/xla/service/stream_pool.h"
 #include "tensorflow/compiler/xla/status_macros.h"
+#include "tensorflow/core/util/util.h"
 
 using xla::source_map_util::InvalidParameterArgument;
 
@@ -171,6 +172,7 @@ LocalExecutable::RunHelper(const absl::Span<const Shape* const> argument_shapes,
 StatusOr<ScopedShapedBuffer> LocalExecutable::Run(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
+  HERE();
   std::vector<const Shape*> argument_shapes;
   argument_shapes.reserve(arguments.size());
   for (const ShapedBuffer* const arg : arguments) {
@@ -231,6 +233,7 @@ static void DumpOutputsAndSaveSnapshot(const Backend* backend,
 StatusOr<ScopedShapedBuffer> LocalExecutable::RunAsync(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
+  HERE();
   std::vector<const Shape*> argument_shapes;
   argument_shapes.reserve(arguments.size());
   for (const ShapedBuffer* const arg : arguments) {
@@ -340,6 +343,7 @@ StatusOr<std::vector<std::unique_ptr<LocalExecutable>>> LocalClient::Compile(
     const XlaComputation& computation,
     const absl::Span<const Shape* const> argument_layouts,
     const ExecutableBuildOptions& options) {
+  HERE();
   ExecutableBuildOptions updated_options = options;
   if (options.device_ordinal() == -1) {
     updated_options.set_device_ordinal(default_device_ordinal());

@@ -57,6 +57,7 @@ limitations under the License.
 #include "tensorflow/core/platform/mutex.h"
 #include "tensorflow/core/platform/tracing.h"
 #include "tensorflow/core/public/session_options.h"
+#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 
@@ -1934,6 +1935,7 @@ Status MasterSession::PostRunCleanup(MasterSession::ReffedClientGraph* rcg,
 Status MasterSession::DoRunWithLocalExecution(
     CallOptions* opts, const RunStepRequestWrapper& req,
     MutableRunStepResponseWrapper* resp) {
+  //HERE();
   VLOG(2) << "DoRunWithLocalExecution req: " << req.DebugString();
   PerStepState pss;
   pss.start_micros = Env::Default()->NowMicros();

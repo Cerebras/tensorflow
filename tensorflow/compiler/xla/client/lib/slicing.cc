@@ -18,6 +18,7 @@ limitations under the License.
 #include <algorithm>
 #include <limits>
 #include <vector>
+#include <limits>
 
 #include "tensorflow/compiler/xla/client/lib/arithmetic.h"
 #include "tensorflow/compiler/xla/client/lib/constants.h"

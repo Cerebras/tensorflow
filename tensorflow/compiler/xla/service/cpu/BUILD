@@ -60,6 +60,7 @@ cc_library(
     name = "cpu_transfer_manager",
     srcs = ["cpu_transfer_manager.cc"],
     hdrs = ["cpu_transfer_manager.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":cpu_runtime",
         "//tensorflow/compiler/xla:literal",
@@ -75,6 +76,8 @@ cc_library(
         "//tensorflow/core:lib",
         "//tensorflow/core:stream_executor_no_cuda",
         "//tensorflow/stream_executor",
+        "//tensorflow/tools/xla_extract:tf_graph_to_xla_lib",
+        "//tensorflow/stream_executor:wse_platform",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:span",
@@ -86,6 +89,7 @@ cc_library(
     name = "buffer_info_util",
     srcs = ["buffer_info_util.cc"],
     hdrs = ["buffer_info_util.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla:cpu_function_runtime",
         "//tensorflow/compiler/xla/service:buffer_assignment",
@@ -96,8 +100,9 @@ cc_library(
 
 cc_library(
     name = "cpu_compiler",
-    srcs = ["cpu_compiler.cc"],
-    hdrs = ["cpu_compiler.h"],
+    srcs = ["cpu_compiler.cc", "wse_compiler.cc"],
+    hdrs = ["cpu_compiler.h", "wse_compiler.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":compiler_functor",
         ":buffer_info_util",
@@ -172,6 +177,7 @@ cc_library(
         "//tensorflow/compiler/xla/service:while_loop_invariant_code_motion",
         "//tensorflow/compiler/xla/service:while_loop_simplifier",
         "//tensorflow/compiler/xla/service:zero_sized_hlo_elimination",
+        "//tensorflow/stream_executor:wse_platform",
         "//tensorflow/compiler/xla/service/llvm_ir:llvm_util",
         "//tensorflow/core:lib",
         "//tensorflow/core:stream_executor_no_cuda",
@@ -199,6 +205,7 @@ cc_library(
         "windows_compatibility.h",
     ],
     hdrs = ["simple_orc_jit.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":compiler_functor",
         ":cpu_runtime",
@@ -254,6 +261,7 @@ cc_library(
     name = "cpu_executable",
     srcs = ["cpu_executable.cc"],
     hdrs = ["cpu_executable.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":simple_orc_jit",
         "//tensorflow/compiler/xla:shape_tree",
@@ -299,6 +307,7 @@ cc_library(
         "elemental_ir_emitter.h",
         "ir_emitter.h",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":cpu_options",
         ":cpu_runtime",
@@ -481,6 +490,7 @@ cc_library(
     name = "compiler_functor",
     srcs = ["compiler_functor.cc"],
     hdrs = ["compiler_functor.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":cpu_runtime",
         ":llvm_ir_runtime",
