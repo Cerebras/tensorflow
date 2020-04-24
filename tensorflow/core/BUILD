@@ -28,6 +28,7 @@
 # ":all_kernels" - The cpu-specific kernels, plus gpu kernels if
 #     built with Cuda
 # ":tensorflow_opensource" - The complete open-source package, including
+# ":tensorflow_opensource" - The complete open-source package, including
 #      ":all_kernels", ":core", and a Session implementation.
 # ":tensorflow" - "tensorflow_opensource" plus some Google-internal libraries.
 # ":testlib" - TensorFlow-specific test support, e.g. utilities for testing
@@ -343,7 +344,10 @@ cc_library(
         "platform/env_time.cc",
     ],
     hdrs = [":platform_base_hdrs"],
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     tags = ["avoid_dep"],
     visibility = [":__subpackages__"],
     deps = [
@@ -444,7 +448,10 @@ cc_library(
         ":platform_protobuf_hdrs",
         ":platform_protobuf_internal_hdrs",
     ],
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     visibility = [":__subpackages__"],
     deps = [
         ":lib_platform",
@@ -2895,7 +2902,10 @@ tf_cuda_library(
         ],
     }),
     hdrs = FRAMEWORK_INTERNAL_PUBLIC_HEADERS,
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     linkopts = select({
         "//tensorflow:freebsd": ["-lm"],
         "//tensorflow:windows": [],
@@ -3091,7 +3101,10 @@ tf_cuda_library(
         "public/version.h",
     ] + CORE_CPU_BASE_HDRS,
     hdrs = CORE_CPU_BASE_HDRS,
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     deps = [
         ":graph",
         ":framework",
@@ -3240,7 +3253,10 @@ tf_cuda_library(
         "public/version.h",
     ],
     hdrs = CORE_CPU_LIB_HEADERS,
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     deps = [
         ":bfc_allocator",
         ":graph",
@@ -3280,7 +3296,10 @@ tf_cuda_library(
     hdrs = [
         "common_runtime/graph_execution_state.h",
     ] + CORE_CPU_LIB_HEADERS,
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     deps = [
         ":framework",
         ":graph",
@@ -3354,7 +3373,10 @@ tf_cuda_library(
         "common_runtime/direct_session.h",
         "util/env_var.h",
     ],
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     deps = [
         ":core_cpu_internal",
         ":framework",
@@ -3377,7 +3399,10 @@ cc_library(
     name = "example_parser_configuration",
     srcs = ["example/example_parser_configuration.cc"],
     hdrs = ["example/example_parser_configuration.h"],
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
@@ -5426,7 +5451,10 @@ genrule(
 tf_portable_proto_library(
     name = "emscripten_proto_lib_no_rtti_lite_runtime",
     config = ":emscripten_proto_config_lite_runtime",
-    copts = tf_opts_nortti_if_emscripten(),
+    copts = tf_opts_nortti_if_emscripten() + [
+        "-ggdb3",
+        "-O0",
+    ],
     features = tf_features_nomodules_if_emscripten(),
     header_outs = tf_android_core_proto_headers(CORE_PROTO_SRCS) + ["//google/protobuf/any.proto.h"],
     link_full_protobuf = False,

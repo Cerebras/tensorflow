@@ -19,6 +19,7 @@ limitations under the License.
 
 #include "tensorflow/core/distributed_runtime/master.h"
 #include "tensorflow/core/platform/mutex.h"
+#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 
@@ -95,6 +96,7 @@ Status LocalMaster::PartialRunSetup(CallOptions* call_options,
 Status LocalMaster::RunStep(CallOptions* call_options,
                             RunStepRequestWrapper* request,
                             MutableRunStepResponseWrapper* response) {
+  //HERE();
   Notification n;
   Status ret;
   master_impl_->RunStep(call_options, request, response,

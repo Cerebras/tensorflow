@@ -26,6 +26,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/service/source_map_util.h"
 #include "tensorflow/compiler/xla/service/stream_pool.h"
 #include "tensorflow/compiler/xla/status_macros.h"
+#include "tensorflow/core/util/util.h"
 
 using xla::source_map_util::InvalidParameterArgument;
 
@@ -174,6 +175,7 @@ LocalExecutable::RunHelper(
 StatusOr<ScopedShapedBuffer> LocalExecutable::Run(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
+  HERE();
   TF_ASSIGN_OR_RETURN(auto options_and_stream,
                       RunHelper(arguments, run_options));
 
@@ -187,6 +189,7 @@ StatusOr<ScopedShapedBuffer> LocalExecutable::Run(
 StatusOr<ScopedShapedBuffer> LocalExecutable::RunAsync(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
+  HERE();
   TF_ASSIGN_OR_RETURN(auto options_and_stream,
                       RunHelper(arguments, run_options));
   return executable_->ExecuteAsyncOnStream(&options_and_stream.first,
@@ -221,6 +224,7 @@ Status LocalExecutable::RecordArguments(
 
 Status LocalExecutable::RecordResult(const ShapedBuffer* result,
                                      HloSnapshot* hlo_snapshot) {
+  HERE();
   hlo_snapshot->clear_result();
   TF_ASSIGN_OR_RETURN(Literal literal, LiteralFromShapedBuffer(*result));
   *hlo_snapshot->mutable_result() = literal.ToProto();
@@ -263,6 +267,7 @@ StatusOr<std::unique_ptr<LocalExecutable>> LocalClient::Compile(
     const XlaComputation& computation,
     const absl::Span<const Shape* const> argument_layouts,
     const ExecutableBuildOptions& options) {
+  HERE();
   ExecutableBuildOptions updated_options = options;
   if (options.device_ordinal() == -1) {
     updated_options.set_device_ordinal(default_device_ordinal());

@@ -12,6 +12,7 @@
 #include "tensorflow/compiler/xla/client/client_library.h"
 #include "tensorflow/core/common_runtime/graph_execution_state.h"
 #include "tensorflow/core/platform/env.h"
+#include "tensorflow/core/framework/function.h"
 #include "tensorflow/core/platform/logging.h"
 
 #include "tensorflow/compiler/xla/service/hlo_module_config.h"
@@ -72,8 +73,8 @@ int get_env_int(const char *s, const int dflt) {
   return dflt;
 }
 
-const bool save_messages = get_env_bool("XLA_SAVE_MESSAGES", false);
-const bool verbose = get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
+const bool save_messages = true; //get_env_bool("XLA_SAVE_MESSAGES", false);
+const bool verbose = true; // get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
 
 template <typename MSG>
 std::string msg_to_json(const MSG& msg) {
@@ -164,6 +165,7 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
               LOG(ERROR) << status.error_message()
                          << ", code = " << status.code() << std::endl;
             }
+
           }
         }
         arg.name = in_def.name();
@@ -179,14 +181,14 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   return std::move(xla_args);
 }
 
-void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
+void InitializeDevices(const SessionOptions& options, std::unique_ptr<DeviceMgr>& device_mgr,
                               DeviceSet* dev_set) {
   std::vector<std::unique_ptr<Device>> devices;
   Status s = DeviceFactory::AddDevices(options, "/job:localhost/replica:0/task:0", &devices);
-  *device_mgr = new DeviceMgr(std::move(devices));
+  device_mgr.reset(new DeviceMgr(std::move(devices)));
   bool have_device = false;
   int devices_added = 0;
-  for (Device *d : (*device_mgr)->ListDevices()) {
+  for (Device *d : device_mgr->ListDevices()) {
     const std::string device_type = d->device_type();
     if (verbose) {
       LOG(INFO) << "Found Device: " << d->name() << " (" << device_type << ")"
@@ -194,7 +196,7 @@ void InitializeDevices(const SessionOptions& options, DeviceMgr** device_mgr,
                 << std::flush;
     }
     // GPU devices alter the client graph in an incompatible way to the curent implementation
-    if (device_type == DEVICE_XLA_CPU || device_type == "CPU") {
+    if (device_type == DEVICE_XLA_CPU || device_type == "CPU" || device_type == DEVICE_CPU_XLA_JIT) {
       dev_set->AddDevice(d);
       d->op_segment()->AddHold("HOLD");
       const std::string& device_name = d->name();
@@ -238,21 +240,115 @@ se::Platform* getCompilePlatform() {
         }
     }
     return platform;
-};
+}
 
 }  // anonymous namespace
+
+xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloModule>& hlo_module) {
+    Status s;
+    if (verbose) {
+        LOG(INFO) << "xla args in correct order and matches fdef\n";
+    }
+    xla::HloModuleProto hmod;
+    {
+        xla::HloPassPipeline pipeline("Interpreter");
+
+        // adding passes we wish to run
+        const bool disable_CallInliner = get_env_bool("DISABLE_CALL_INLINER", false);
+        const bool disable_HloSubcomputationUnification = get_env_bool("DISABLE_HLO_SUBCOMPUTATION_UNIFICATION", false);
+        const bool disable_HloCSE_false = get_env_bool("DISABLE_HLO_CSE_FALSE", false);
+        const bool disable_AlgebraicSimplifier = get_env_bool("DISABLE_ALGEBRAIC_SIMPLIFIER", false);
+        const bool disable_WhileLoopSimplifier = get_env_bool("DISABLE_WHILE_LOOP_SIMPLIFIER", false);
+        const bool disable_ReshapeMover = get_env_bool("DISABLE_RESHAPE_MOVER", false);
+        const bool disable_HloConstantFolding = get_env_bool("DISABLE_HLO_CONSTANT_FOLDING", false);
+        const bool disable_HloCSE_true = get_env_bool("DISABLE_HLO_CSE_TRUE", false);
+        const bool disable_HloDCE = get_env_bool("DISABLE_HLO_DCE", false);
+        const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
+
+
+        if (get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
+            std::cout << "DISABLE_CALL_INLINER: "<< disable_CallInliner<<"\n";
+            std::cout << "DISABLE_HLO_SUBCOMPUTATION_UNIFICATION: "<< disable_HloSubcomputationUnification<<"\n";
+            std::cout << "DISABLE_HLO_CSE_FALSE: "<< disable_HloCSE_false<<"\n";
+            std::cout << "DISABLE_ALGEBRAIC_SIMPLIFIER: "<< disable_AlgebraicSimplifier<<"\n";
+            std::cout << "DISABLE_WHILE_LOOP_SIMPLIFIER: "<< disable_WhileLoopSimplifier<<"\n";
+            std::cout << "DISABLE_RESHAPE_MOVER: "<< disable_ReshapeMover<<"\n";
+            std::cout << "DISABLE_HLO_CONSTANT_FOLDING: "<< disable_HloConstantFolding<<"\n";
+            std::cout << "DISABLE_HLO_CSE_TRUE: "<< disable_HloCSE_true<<"\n";
+            std::cout << "DISABLE_HLO_DCE: "<< disable_HloDCE<<"\n";
+            std::cout << "DISABLE_FLATTEN_CALL_GRAPH: "<< disable_FlattenCallGraph<<"\n";
+        }
+        if (!disable_CallInliner){
+            pipeline.AddPass<xla::CallInliner>();
+        }
+        if (!disable_HloSubcomputationUnification){
+            pipeline.AddPass<xla::HloSubcomputationUnification>();
+        }
+        if (!disable_HloCSE_false){
+            pipeline.AddPass<xla::HloCSE>(false);
+        }
+        if (!disable_AlgebraicSimplifier){
+            xla::AlgebraicSimplifierOptions options(
+                    [](const xla::Shape&, const xla::Shape&) { return false; });
+            options.set_enable_dot_strength_reduction(false);
+            options.set_enable_conv_simplification(false);
+            pipeline.AddPass<xla::AlgebraicSimplifier>(options);
+        }
+        if (!disable_WhileLoopSimplifier){
+            pipeline.AddPass<xla::WhileLoopSimplifier>();
+        }
+        if (!disable_ReshapeMover){
+            pipeline.AddPass<xla::ReshapeMover>();
+        }
+        if (!disable_HloConstantFolding){
+            pipeline.AddPass<xla::HloConstantFolding>();
+        }
+        if (!disable_HloCSE_true){
+            pipeline.AddPass<xla::HloCSE>(true);
+        }
+        if (!disable_HloDCE){
+            pipeline.AddPass<xla::HloDCE>();
+        }
+        if (!disable_FlattenCallGraph){
+            pipeline.AddPass<xla::FlattenCallGraph>();
+        }
+
+        /*disabled since it errors out
+        pipeline.AddPass<xla::LayoutAssignment>(
+            hlo_module.get()->mutable_entry_computation_layout(),
+            xla::LayoutAssignment::InstructionCanChangeLayout);
+        */
+
+        // hlo optimization run
+        s = pipeline.Run(hlo_module.get()).status();
+
+        if (!s.ok()) {
+            LOG(ERROR) << "Couldn't Run HloOptimization: " << s.error_message();
+            return s;
+        }
+
+        if (verbose) {
+            LOG(INFO) << "Done HLO Optimization\n";
+        }
+        //hmod = hlo_module.get()->ToProto();
+    }
+
+    return std::move(hlo_module);
+}
 
 xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                                            const std::string& fetch) {
   Status s;
   SessionOptions sess_options;
   sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
-  DeviceMgr* device_mgr;
+  std::unique_ptr<DeviceMgr> device_mgr;
   DeviceSet dev_set;
   // XLA_LOG == 0, no prints
   // XLA_LOG == 1, final message only
   // XLA_LOG == 2, other useful messages
-  InitializeDevices(sess_options, &device_mgr, &dev_set);
+  InitializeDevices(sess_options, device_mgr, &dev_set);
+
+  const std::string dtype = dev_set.client_device()->device_type();
 
   // Local copy for modification
   GraphDef gdef = in_graph;
@@ -282,7 +378,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
   // Usually there is only one cluster, but for some graphs (e.g. LSTM) there
   // may be more.  Return the *last* cluster whose name starts with "cluster_"
-  FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
+  tensorflow::FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
   if (save_messages) {
     save_msg(fdef_lib , "FunctionDefLibrary.json");
@@ -308,13 +404,13 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     fdef_iter = fdef_lib.mutable_function()->rend()-1;
     FunctionDef temp_fdef = *fdef_iter;
 
-    if(verbose) {
+    if (verbose) {
       LOG(INFO) << "cluster not found, using " << temp_fdef.signature().name()
                 << " instead\n";
     }
   }
 
-  FunctionDef& fdef = *fdef_iter;
+  const FunctionDef& fdef = *fdef_iter;
 
   if (save_messages) {
     save_msg(fdef, "fdef.json");
@@ -323,12 +419,42 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
 
   // to make sure xla_args matches fdef
-  if(verbose) {
-    LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << "\n";
+  if (get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
+    LOG(INFO) << "number of function defs:" << fdef_lib.function().size() << std::endl;
     LOG(INFO) << fdef.signature().name() << "\n";
-    LOG(INFO) << "xla args number:" << xla_args.size() << "\n";
+    LOG(INFO) << "xla args number:" << xla_args.size() << std::endl;
     LOG(INFO) << "fdef_args number:" << fdef.signature().input_arg().size()
-              << "\n";
+              << std::endl;
+    // fdef.ret:
+    // A mapping from the output arg names from `signature` to the
+    // outputs from `node_def` that should be returned by the function.
+    LOG(INFO) << "fdef output mapping signature -> node_def: " << std::endl;
+    for (std::pair<std::string, std::string> signature_to_node_def_output : fdef.ret()) {
+      LOG(INFO) << "\t\"" << signature_to_node_def_output.first << "\" -> \""
+                << signature_to_node_def_output.second << "\""
+                << std::endl;
+    }
+  }
+
+  std::list<std::string> output_order;  // TODO: Should return this
+  const OpDef& signature = fdef.signature();
+  assert(signature.output_arg_size() == fdef.ret_size());
+  for (size_t i = 0, n = signature.output_arg_size(); i < n; ++i) {
+    const ::tensorflow::OpDef_ArgDef& arg = signature.output_arg(i);
+    const std::string& output_name = arg.name();
+    const auto iter = fdef.ret().find(output_name);
+    assert(iter != fdef.ret().end());
+    std::string incoming_output_name = iter->second;
+    static const std::string output_str = ":output:";
+    std::size_t output_pos = incoming_output_name.find_last_of(output_str);
+    if (output_pos != std::string::npos) {
+      const std::string fixname1 = incoming_output_name.substr(0, output_pos - (output_str.size() - 1));
+      const std::string fixname2 = incoming_output_name.substr(output_pos);
+      incoming_output_name = fixname1;
+      incoming_output_name += fixname2;
+    }
+    std::cout << "Incoming output name: " << incoming_output_name << std::endl << std::flush;
+    output_order.push_back(incoming_output_name);
   }
 
   // compares fdef_args(ground truth) with xla_args
@@ -345,7 +471,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   bool readvarop_flag = false;
   for (int j = 0; j < fdef_ground_truth.size(); j++) {
     std::size_t found = fdef_ground_truth[j].name().find(kReadVarOpString);
-    if(found != std::string::npos){
+    if (found != std::string::npos){
       readvarop_flag = true;
     }
   }
@@ -367,7 +493,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
       }
     }
     // additional case check
-    if(!match_flag && readvarop_flag){
+    if (!match_flag && readvarop_flag){
         std::string xla_arg_name = xla_args[i].name;
     xla_arg_name = str_util::Lowercase(xla_arg_name);
     xla_arg_name = str_util::ArgDefCase(xla_arg_name);
@@ -397,6 +523,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   xla::HloModuleProto hmod;
   {
     DeviceType device_type(DEVICE_CPU_XLA_JIT);
+    //DeviceType device_type(dtype);
     XlaCompiler::Options compile_options;
 
     se::Platform *platform = getCompilePlatform();
@@ -420,13 +547,26 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
                                  xla_args, &result);
-    if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
-
+    if (!s.ok()) {
+      std::string msg = "Couldn't compile to xla: ";
+      msg += s.error_message();
+      LOG(ERROR) << msg;
+      if (!result.computation.get()) {
+        throw std::runtime_error(msg);
+      }
+    }
 
     if (verbose) {
       LOG(INFO) << "Done Compiling";
     }
-    hmod.CopyFrom(result.computation->proto());
+
+    if (result.computation.get()) {
+      hmod.CopyFrom(result.computation->proto());
+    }
+
+    if (save_messages) {
+      save_msg(hmod, "hmod_in.json");
+    }
 
     // hlo optimizations
     xla::StatusOr<xla::ProgramShape> program_shape_status =
@@ -454,7 +594,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
 
 
-    if(get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
+    if (get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
       std::cout << "DISABLE_CALL_INLINER: "<< disable_CallInliner<<"\n";
       std::cout << "DISABLE_HLO_SUBCOMPUTATION_UNIFICATION: "<< disable_HloSubcomputationUnification<<"\n";
       std::cout << "DISABLE_HLO_CSE_FALSE: "<< disable_HloCSE_false<<"\n";
@@ -466,38 +606,38 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
       std::cout << "DISABLE_HLO_DCE: "<< disable_HloDCE<<"\n";
       std::cout << "DISABLE_FLATTEN_CALL_GRAPH: "<< disable_FlattenCallGraph<<"\n";
     }
-    if(disable_CallInliner==false){
+    if (!disable_CallInliner){
       pipeline.AddPass<xla::CallInliner>();
     }
-    if(disable_HloSubcomputationUnification==false){
+    if (!disable_HloSubcomputationUnification){
       pipeline.AddPass<xla::HloSubcomputationUnification>();
     }
-    if(disable_HloCSE_false==false){
+    if (!disable_HloCSE_false){
       pipeline.AddPass<xla::HloCSE>(false);
     }
-    if(disable_AlgebraicSimplifier==false){
+    if (!disable_AlgebraicSimplifier){
       xla::AlgebraicSimplifierOptions options(
         [](const xla::Shape&, const xla::Shape&) { return false; });
       options.set_enable_dot_strength_reduction(false);
       options.set_enable_conv_simplification(false);
       pipeline.AddPass<xla::AlgebraicSimplifier>(options);
     }
-    if(disable_WhileLoopSimplifier==false){
+    if (!disable_WhileLoopSimplifier){
       pipeline.AddPass<xla::WhileLoopSimplifier>();
     }
-    if(disable_ReshapeMover==false){
+    if (!disable_ReshapeMover){
       pipeline.AddPass<xla::ReshapeMover>();
     }
-    if(disable_HloConstantFolding==false){
+    if (!disable_HloConstantFolding){
       pipeline.AddPass<xla::HloConstantFolding>();
     }
-    if(disable_HloCSE_true==false){
+    if (!disable_HloCSE_true){
       pipeline.AddPass<xla::HloCSE>(true);
     }
-    if(disable_HloDCE==false){
+    if (!disable_HloDCE){
       pipeline.AddPass<xla::HloDCE>();
     }
-    if(disable_FlattenCallGraph==false){
+    if (!disable_FlattenCallGraph){
       pipeline.AddPass<xla::FlattenCallGraph>();
     }
 
@@ -518,6 +658,10 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
       LOG(INFO) << "Done HLO Optimization\n";
     }
     hmod = hlo_module.get()->ToProto();
+
+    if (save_messages) {
+      save_msg(hmod, "hmod_out_1.json");
+    }
 
     auto* comps = hmod.mutable_computations();
 
@@ -542,28 +686,35 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
                   });
   }
 
-  if (device_mgr != nullptr) {
-    delete (device_mgr);
+  if (save_messages) {
+    save_msg(hmod, "hmod_out_2.json");
   }
 
   return std::move(hmod);
 }
 
 Status xla_extract_via_strings(const std::string& graph_def_msg,
-                                const std::string& target_node,
-                                std::string* out_graph) {
+                               const std::string& target_node,
+                               std::string* out_graph) {
   GraphDef gdef;
-
   gdef.ParseFromString(graph_def_msg);
 
-  if (save_messages) {
+  //if (save_messages) {
     save_msg(gdef, "graph.json");
-  }
+  //}
 
   auto hmod = ExtractHloFromGraphDef(gdef, target_node);
   hmod.SerializeToString(out_graph);
 
-  if(get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
+  if (save_messages) {
+    FILE *f = fopen("xla_module.pbtxt", "wb");
+    assert(f);
+    fwrite(out_graph->data(), out_graph->size(), 1, f);
+    fclose(f);
+    save_msg(hmod, "xla_module.json");
+  }
+
+  if (get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {
       std::cout << "XLA Extraction Complete\n";
   }
 

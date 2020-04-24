@@ -1163,7 +1163,7 @@ cc_library(
         "//tensorflow/core:stream_executor_no_cuda",
         "//tensorflow/core/profiler/lib:traceme",
         "//tensorflow/stream_executor:kernel_spec",
-        "//tensorflow/stream_executor/cuda:ptxas_utils",
+        #"//tensorflow/stream_executor/cuda:ptxas_utils",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",

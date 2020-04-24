@@ -28,6 +28,10 @@ cc_library(
     name = "signature_def_utils",
     srcs = ["signature_def_utils.cc"],
     hdrs = ["signature_def_utils.h"],
+    copts = [
+        "-ggdb3",
+        "-O0",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//tensorflow/cc/saved_model:signature_constants",

@@ -62,6 +62,7 @@ cc_library(
     srcs = [
         "comparison_util.cc",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     hdrs = [
         "comparison_util.h",
     ],
@@ -80,6 +81,7 @@ cc_library(
     srcs = [
         "execution_options_util.cc",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     hdrs = [
         "execution_options_util.h",
     ],
@@ -126,6 +128,7 @@ cc_library(
 cc_library(
     name = "status_macros",
     srcs = ["status_macros.cc"],
+    copts = [ "-ggdb3", "-O0" ],
     hdrs = ["status_macros.h"],
     visibility = ["//visibility:public"],
     deps = [
@@ -175,6 +178,7 @@ cc_library(
 cc_library(
     name = "util",
     srcs = ["util.cc"],
+    copts = [ "-ggdb3", "-O0" ],
     hdrs = [
         "iterator_util.h",
         "map_util.h",
@@ -201,6 +205,7 @@ cc_library(
 cc_library(
     name = "protobuf_util",
     srcs = ["protobuf_util.cc"],
+    copts = [ "-ggdb3", "-O0" ],
     hdrs = [
         "protobuf_util.h",
     ],
@@ -255,6 +260,7 @@ cc_library(
         "shape.h",
         "shape_util.h",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":protobuf_util",
@@ -368,6 +374,7 @@ cc_library(
     name = "literal",
     srcs = ["literal.cc"],
     hdrs = ["literal.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":array2d",
@@ -412,6 +419,7 @@ cc_library(
     name = "literal_util",
     srcs = ["literal_util.cc"],
     hdrs = ["literal_util.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":array2d",
@@ -440,6 +448,7 @@ cc_library(
     name = "literal_comparison",
     srcs = ["literal_comparison.cc"],
     hdrs = ["literal_comparison.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":error_spec",
         ":literal",
@@ -456,6 +465,7 @@ cc_library(
     name = "metric_table_report",
     srcs = ["metric_table_report.cc"],
     hdrs = ["metric_table_report.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":util",
@@ -573,6 +583,7 @@ cc_library(
     name = "executable_run_options",
     srcs = ["executable_run_options.cc"],
     hdrs = ["executable_run_options.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":types",
@@ -583,6 +594,7 @@ cc_library(
     name = "packed_literal_reader",
     srcs = ["packed_literal_reader.cc"],
     hdrs = ["packed_literal_reader.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = [":internal"],
     deps = [
         ":literal",
@@ -617,6 +629,7 @@ cc_library(
     name = "text_literal_reader",
     srcs = ["text_literal_reader.cc"],
     hdrs = ["text_literal_reader.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = [":internal"],
     deps = [
         ":literal",
@@ -653,6 +666,7 @@ cc_library(
     name = "text_literal_writer",
     srcs = ["text_literal_writer.cc"],
     hdrs = ["text_literal_writer.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = [":internal"],
     deps = [
         ":literal",
@@ -715,6 +729,7 @@ cc_library(
     name = "shape_layout",
     srcs = ["shape_layout.cc"],
     hdrs = ["shape_layout.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":shape_util",
@@ -729,6 +744,7 @@ cc_library(
     name = "window_util",
     srcs = ["window_util.cc"],
     hdrs = ["window_util.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":types",
@@ -744,6 +760,7 @@ cc_library(
     name = "reference_util",
     srcs = ["reference_util.cc"],
     hdrs = ["reference_util.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":array2d",
@@ -788,6 +805,7 @@ cc_library(
     name = "sparse_index_array",
     srcs = ["sparse_index_array.cc"],
     hdrs = ["sparse_index_array.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":array2d",
         ":shape_util",
@@ -859,6 +877,7 @@ cc_library(
     name = "cpu_function_runtime",
     srcs = ["cpu_function_runtime.cc"],
     hdrs = ["cpu_function_runtime.h"],
+    copts = [ "-ggdb3", "-O0" ],
     visibility = [":friends"],
     deps = ["//tensorflow/core:framework_lite"],
 )

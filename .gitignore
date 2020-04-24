@@ -39,3 +39,9 @@ env
 .scripts
 browse.vsc.*
 cmake-build-*
+#xla_client
+.py_root
+
+CMakeLists.txt
+/*.pbtxt
+/*.json

@@ -6311,7 +6311,10 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
-    copts = tf_copts(),
+    copts = tf_copts() + [
+        "-ggdb3",
+        "-O0",
+    ],
     linkopts = select({
         "//tensorflow:android": [
             "-ldl",

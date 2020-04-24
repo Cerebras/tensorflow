@@ -12,9 +12,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "tensorflow/core/common_runtime/optimization_registry.h"
 #include "tensorflow/core/util/dump_graph.h"
+#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 
@@ -30,15 +33,30 @@ void OptimizationPassRegistry::Register(
   groups_[grouping][phase].push_back(std::move(pass));
 }
 
+std::string my_to_string(const int t) {
+  std::string s;
+  std::stringstream out;
+  out << t;
+  return out.str();
+}
+
 Status OptimizationPassRegistry::RunGrouping(
     Grouping grouping, const GraphOptimizationPassOptions& options) {
   auto group = groups_.find(grouping);
   if (group != groups_.end()) {
+    int xx = 0;
     for (auto& phase : group->second) {
-      VLOG(1) << "Running optimization phase " << phase.first;
+      //std::cout << "Running optimization phase " << phase.first << std::endl << std::flush;
       for (auto& pass : phase.second) {
-        VLOG(1) << "Running optimization pass: " << pass->name();
+        //std::cout << "Running optimization pass: " << pass->name() << std::endl << std::flush;
         Status s = pass->Run(options);
+
+        std::string title = "run_grouping_";
+        title += my_to_string(xx);
+        ++xx;
+        title += ".json";
+        save_msg(options.flib_def->ToProto(), title.c_str());
+
         if (!s.ok()) return s;
         if (VLOG_IS_ON(1)) {
           if (options.graph) {

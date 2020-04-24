@@ -43,6 +43,7 @@ limitations under the License.
 #include "tensorflow/core/platform/mem.h"
 #include "tensorflow/core/platform/mutex.h"
 #include "tensorflow/core/platform/types.h"
+#include "tensorflow/core/util/util.h"
 #include "tensorflow/stream_executor/host/host_stream.h"
 
 namespace xla {
@@ -268,6 +269,7 @@ StatusOr<ScopedShapedBuffer> CpuExecutable::ExecuteOnStream(
     const ServiceExecutableRunOptions* run_options,
     absl::Span<const ShapedBuffer* const> arguments,
     HloExecutionProfile* hlo_execution_profile) {
+  //HERE();
   TF_ASSIGN_OR_RETURN(
       auto result,
       ExecuteAsyncOnStreamImpl(run_options, arguments, hlo_execution_profile));
@@ -278,6 +280,7 @@ StatusOr<ScopedShapedBuffer> CpuExecutable::ExecuteOnStream(
 StatusOr<ScopedShapedBuffer> CpuExecutable::ExecuteAsyncOnStream(
     const ServiceExecutableRunOptions* run_options,
     absl::Span<const ShapedBuffer* const> arguments) {
+  HERE();
   if (hlo_profiling_enabled()) {
     return Unimplemented(
         "Asynchronous execution on stream with hlo profiling is not yet "

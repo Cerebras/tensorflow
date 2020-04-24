@@ -19,6 +19,11 @@ limitations under the License.
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
 
+__thread int EnterLeave::depth_ = 0;
+const std::string EnterLeave::library_ = "tf";
+const Color::Code EnterLeave::library_color_ = Color::FG_YELLOW;
+std::mutex EnterLeave::mtx_;
+
 namespace tensorflow {
 
 StringPiece NodeNamePrefix(const StringPiece& op_name) {

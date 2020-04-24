@@ -1330,7 +1330,6 @@ void RestoreTensorMapping(const FunctionOptimizerContext& ctx,
 Status FunctionOptimizer::RunFunctionOptimizerPass(
     const GrapplerItem& item, GraphDef* optimized_graph) const {
   VLOG(3) << "Run function optimizer pass: grappler_item_id=" << item.id;
-
   // Inline all function calls into a graph using common_runtime/function
   // implementation (see `InlineFunctionBody` function documentation).
   GraphDef graph_after_inlining;

@@ -58,6 +58,7 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/ptr_util.h"
 #include "tensorflow/stream_executor/device_memory_allocator.h"
+#include "tensorflow/core/util/util.h"
 
 namespace xla {
 namespace {
@@ -784,6 +785,7 @@ StatusOr<std::unique_ptr<Executable>> Service::BuildExecutable(
     const HloModuleProto& module_proto,
     std::unique_ptr<HloModuleConfig> module_config, Backend* backend,
     se::StreamExecutor* executor, se::DeviceMemoryAllocator* device_allocator) {
+  //HERE();
   VLOG(1) << StrFormat(
       "BuildExecutable on service %p with serialized module proto: %s", this,
       module_proto.name());

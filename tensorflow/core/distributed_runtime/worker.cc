@@ -25,6 +25,7 @@ limitations under the License.
 #include "tensorflow/core/distributed_runtime/worker_session.h"
 #include "tensorflow/core/platform/tracing.h"
 #include "tensorflow/core/profiler/lib/profiler_session.h"
+#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 
@@ -130,6 +131,7 @@ Status Worker::PrepareRunGraph(RunGraphRequestWrapper* req,
 void Worker::RunGraphAsync(CallOptions* opts, RunGraphRequestWrapper* request,
                            MutableRunGraphResponseWrapper* response,
                            StatusCallback done) {
+  //HERE();
   if (request->store_errors_in_response_body()) {
     done = [response, done](const Status& status) {
       response->set_status(status);

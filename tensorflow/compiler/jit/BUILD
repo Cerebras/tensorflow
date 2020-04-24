@@ -23,7 +23,7 @@ package(
     ],
 )
 
-load("//tensorflow:tensorflow.bzl", "tf_cc_test", "cc_header_only_library")
+load("//tensorflow:tensorflow.bzl", "cc_header_only_library", "tf_cc_test")
 load("@local_config_cuda//cuda:build_defs.bzl", "if_cuda")
 load("//tensorflow:tensorflow.bzl", "tf_custom_op_py_library")
 
@@ -525,6 +525,10 @@ cc_library(
         "mark_for_compilation_pass.h",
         "mark_for_compilation_pass_test_helper.h",
         "partially_decluster_pass.h",
+    ],
+    copts = [
+        "-ggdb3",
+        "-O0",
     ],
     deps = [
         "compilability_check_util",

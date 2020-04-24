@@ -97,7 +97,8 @@ Status UpdateArgAndRetvalMetadata(
 
   for (int i = 0; i < arg_nodes.size(); ++i) {
     Node* arg = arg_nodes[i].first;
-    arg->AddAttr("index", i);
+    arg->
+    AddAttr("index", i);
     TF_RETURN_IF_ERROR(arg->attrs().Find("T", &attr_value));
     AllocatorAttributes alloc_attr;
     DataType type = attr_value->type();
