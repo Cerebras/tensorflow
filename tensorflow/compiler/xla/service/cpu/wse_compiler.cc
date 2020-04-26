@@ -118,10 +118,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 #include "tensorflow/core/platform/dynamic_annotations.h"
 #include "tensorflow/stream_executor/wse/wse_platform_id.h"
-
-namespace tensorflow {
-xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloModule>& hlo_module);
-}
+#include "tensorflow/tools/xla_extract/wse_hlo.h"
 
 namespace xla {
 
@@ -265,9 +262,13 @@ StatusOr<std::unique_ptr<HloModule>> WseCompiler::RunHloPasses(
     se::StreamExecutor* /*stream_exec*/,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
   HERE();
+#if 0
   save_msg(module->ToProto(), "wse_hlom_in", save_msg_counter);
   dump_inputs_outputs(*module);
-  return tensorflow::RunHlo(module);
+  return tensorflow::wse::RunHlo(module);
+#else
+  std::cout << "SKIPPING WSE HLO COMPILE" << std::endl << std::flush;
+#endif
 }
 
 /**
