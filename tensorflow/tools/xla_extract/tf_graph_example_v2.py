@@ -26,6 +26,8 @@ from tensorflow.tools.xla_extract import XlaExtract
 #     ExtractXlaWithStringInputs
 # )
 
+WITH_CONV = False
+
 def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
     ''' This function is the input to Estimator constructor.
     More generally it is a python function that returns a computational graph
@@ -36,24 +38,28 @@ def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
     data_format = "channels_first"
     #jit_scope = tf.python.compiler.jit.experimental_jit_scope
     with tf.compat.v1.variable_scope("eg_model", use_resource=True):
-        conv1 = keras.layers.Conv2D(
-            filters=4,
-            kernel_size=[3, 3],
-            padding="same",
-            activation=tf.nn.relu,
-            data_format=data_format)(features)
-        pool1 = keras.layers.MaxPooling2D(
-            pool_size=(2, 2),
-            data_format=data_format)(conv1)
-        conv2 = keras.layers.Conv2D(
-            filters=4,
-            kernel_size=[3, 3],
-            padding="same",
-            activation=tf.nn.relu,
-            data_format=data_format)(pool1)
+        if WITH_CONV:
+            conv1 = keras.layers.Conv2D(
+                filters=4,
+                kernel_size=[3, 3],
+                padding="same",
+                activation=tf.nn.relu,
+                data_format=data_format)(features)
+            pool1 = keras.layers.MaxPooling2D(
+                pool_size=(2, 2),
+                data_format=data_format)(conv1)
+            conv2 = keras.layers.Conv2D(
+                filters=4,
+                kernel_size=[3, 3],
+                padding="same",
+                activation=tf.nn.relu,
+                data_format=data_format)(pool1)
+            flat = keras.layers.Flatten(
+                data_format=data_format)(conv2)
+        else:
+            flat = keras.layers.Flatten(
+                data_format=data_format)(features)
 
-        flat = keras.layers.Flatten(
-            data_format=data_format)(conv2)
         logits = keras.layers.Dense(
             units=num_classes,
             use_bias=False)(flat)

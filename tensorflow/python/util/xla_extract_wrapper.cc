@@ -26,14 +26,15 @@ struct TF_Status;
 
 PYBIND11_MODULE(_pywrap_xla_extract, m) {
   m.def("ExtractXlaWithStringInputs",
-        [](const std::string* graph_def_string,
-           const std::string* targets_string) {
+        [](const std::string& graph_def_string,
+             const std::string& targets_string) {
                std::string result;
                tensorflow::Status extraction_status =
-                   tensorflow::xla_extract_via_strings(*graph_def_string,
-                                                       *targets_string,
+                   tensorflow::xla_extract_via_strings(graph_def_string,
+                                                       targets_string,
                                                        &result);
+               std::cout << "extraction_status: " << extraction_status << std::endl << std::flush;
                MaybeRaiseFromStatus(extraction_status);
-               return result;
+               return py::bytes(result);
         });
 }

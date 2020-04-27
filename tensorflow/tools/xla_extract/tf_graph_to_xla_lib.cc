@@ -125,12 +125,11 @@ std::vector<XlaCompiler::Argument> BuildXlaArgsFromClientGraph(
   return std::move(xla_args);
 }
 
-void InitializeDevices(const SessionOptions& options, std::unique_ptr<DynamicDeviceMgr>& device_mgr,
+void InitializeDevices(const SessionOptions& options, std::unique_ptr<StaticDeviceMgr>& device_mgr,
                               DeviceSet* dev_set) {
   std::vector<std::unique_ptr<Device>> devices;
   Status s = DeviceFactory::AddDevices(options, "/job:localhost/replica:0/task:0", &devices);
-  device_mgr.reset(new DynamicDeviceMgr());
-  device_mgr->AddDevices(std::move(devices));
+  device_mgr = std::make_unique<StaticDeviceMgr>(std::move(devices));
   bool have_device = false;
   int devices_added = 0;
   for (Device *d : device_mgr->ListDevices()) {
@@ -195,7 +194,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(GraphDef&& in_graph,
   Status s;
   SessionOptions sess_options;
   sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
-  std::unique_ptr<DynamicDeviceMgr> device_mgr;
+  std::unique_ptr<StaticDeviceMgr> device_mgr;
   DeviceSet dev_set;
   // XLA_LOG == 0, no prints
   // XLA_LOG == 1, final message only
@@ -236,7 +235,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(GraphDef&& in_graph,
   tensorflow::FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
   if (save_messages) {
-    wse::save_msg(fdef_lib , "FunctionDefLibrary.json");
+    save_msg(fdef_lib , "FunctionDefLibrary.json");
   }
 
   auto fdef_iter =
@@ -268,7 +267,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(GraphDef&& in_graph,
   const FunctionDef& fdef = *fdef_iter;
 
   if (save_messages) {
-    wse::save_msg(fdef, "fdef.json");
+    save_msg(fdef, "fdef.json");
   }
 
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);

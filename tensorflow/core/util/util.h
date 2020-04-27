@@ -116,6 +116,9 @@ public:
 #include <sys/syscall.h>
 #include <zconf.h>
 
+//#define WSE_DEBUG_LOGGING
+
+#ifdef WSE_DEBUG_LOGGING
 class EnterLeave {
     static __thread int depth_;
     static const std::string library_;
@@ -164,9 +167,22 @@ public:
       }
     }
 };
+#else
 
+class EnterLeave {
+public:
+  inline EnterLeave(const std::string& label, bool both=true) {}
+};
+
+#endif  // WSE_DEBUG_LOGGING
+
+#ifdef WSE_DEBUG_LOGGING
 #define HERE() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__))
 #define HEREX() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__), false)
+#else
+#define HERE() ((void)0)
+#define HEREX() ((void)0)
+#endif
 
 //#include "external/protobuf_archive/src/google/protobuf/util/json_util.h"
 
@@ -197,6 +213,7 @@ std::string msg_to_json(const MSG& msg) {
 
 template <typename MSG>
 bool save_msg(const MSG& msg, const std::string& file) {
+#ifdef WSE_DEBUG_LOGGING
   const std::string json = msg_to_json(msg);
 
   FILE* f = fopen(file.c_str(), "wt");
@@ -210,6 +227,9 @@ bool save_msg(const MSG& msg, const std::string& file) {
               << std::flush;
     return false;
   }
+#else
+  return true;
+#endif // WSE_DEBUG_LOGGING
 }
 
 #endif  // TENSORFLOW_CORE_UTIL_UTIL_H_

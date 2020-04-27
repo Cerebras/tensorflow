@@ -1,0 +1,1 @@
+bazel --output_user_root=/spare/bazel-cache-gcc-cerebras build --config=mkl --strip=never --copt=-fdiagnostics-color //tensorflow/tools/pip_package:build_pip_package
