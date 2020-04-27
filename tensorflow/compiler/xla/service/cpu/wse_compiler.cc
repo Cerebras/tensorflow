@@ -262,7 +262,7 @@ StatusOr<std::unique_ptr<HloModule>> WseCompiler::RunHloPasses(
     se::StreamExecutor* /*stream_exec*/,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
   HERE();
-#if 0
+#if 1
   save_msg(module->ToProto(), "wse_hlom_in", save_msg_counter);
   dump_inputs_outputs(*module);
   return tensorflow::wse::RunHlo(module);

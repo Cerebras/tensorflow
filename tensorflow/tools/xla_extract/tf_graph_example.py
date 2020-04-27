@@ -14,7 +14,7 @@ from tensorflow.python.compiler.xla import xla
 
 from tensorflow.tools.xla_extract import XlaExtract
 
-WITH_CONV = False
+WITH_CONV = True
 
 def model_fn(features, labels, mode=tf.estimator.ModeKeys.TRAIN, params=None):
     ''' This function is the input to Estimator constructor.

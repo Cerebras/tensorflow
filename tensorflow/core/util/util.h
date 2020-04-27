@@ -116,7 +116,7 @@ public:
 #include <sys/syscall.h>
 #include <zconf.h>
 
-//#define WSE_DEBUG_LOGGING
+#define WSE_DEBUG_LOGGING
 
 #ifdef WSE_DEBUG_LOGGING
 class EnterLeave {
