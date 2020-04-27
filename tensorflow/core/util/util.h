@@ -69,6 +69,7 @@ bool DisableMKL();
 #include <ostream>
 namespace Color {
 enum Code {
+  BG_INVALID = -1,
   FG_RESET = 0,
   FG_RED = 31,
   FG_GREEN = 32,
@@ -81,7 +82,7 @@ enum Code {
   BG_RED = 41,
   BG_GREEN = 42,
   BG_BLUE = 44,
-  BG_DEFAULT = 49
+  BG_DEFAULT = 49,
 };
 
 class Modifier {
@@ -113,12 +114,25 @@ public:
   }
 };
 
+#include <sstream>
+namespace std {
+template<typename T>
+inline std::string to_string(const T& obj) {
+  std::stringstream ss;
+  ss << obj;
+  return std::move(ss.str());
+}
+} // namespace std
+
 #include <sys/syscall.h>
 #include <zconf.h>
 
 #define WSE_DEBUG_LOGGING
 
 #ifdef WSE_DEBUG_LOGGING
+
+#include <mutex>
+
 class EnterLeave {
     static __thread int depth_;
     static const std::string library_;
@@ -126,6 +140,7 @@ class EnterLeave {
     const std::string label_;
     const pid_t thread_id_;
     const bool both_;
+    const Color::Code use_color_;
     static std::mutex mtx_;
 public:
     static std::string concat(const char *s0, const char *s1, const char *s2) {
@@ -144,13 +159,15 @@ public:
       }
       return s;
     }
-    inline EnterLeave(const std::string& label, bool both=true) : label_(label), thread_id_(syscall(SYS_gettid)), both_(both) {
+    inline EnterLeave(const std::string& label, bool both=true, const Color::Code use_color = Color::BG_INVALID)
+    : label_(label), thread_id_(syscall(SYS_gettid)), both_(both),
+      use_color_(use_color == Color::BG_INVALID ? library_color_ : use_color) {
       std::lock_guard<std::mutex> lk(mtx_);
       for (int x = 0; x < depth_; ++x) {
         printf("  ");
       }
-      ColorScope color_scope(library_color_);
-      printf("%s[%d (%s)]: %s\n", both_ ? "ENTER" : "HERE", thread_id_, library_.c_str(), label.c_str());
+      ColorScope color_scope(use_color_);
+      printf("%s[tid=%d (%s)]: %s\n", both_ ? "ENTER" : "HERE", thread_id_, library_.c_str(), label.c_str());
       fflush(stdout);
       ++depth_;
     }
@@ -158,11 +175,11 @@ public:
       std::lock_guard<std::mutex> lk(mtx_);
       --depth_;
       if (both_) {
-        ColorScope color_scope(library_color_);
+        ColorScope color_scope(use_color_);
         for (int x = 0; x < depth_; ++x) {
           printf("  ");
         }
-        printf("LEAVE[%d (%s)]: %s\n", thread_id_, library_.c_str(), label_.c_str());
+        printf("LEAVE[tid=%d (%s)]: %s\n", thread_id_, library_.c_str(), label_.c_str());
         fflush(stdout);
       }
     }
@@ -177,8 +194,11 @@ public:
 #endif  // WSE_DEBUG_LOGGING
 
 #ifdef WSE_DEBUG_LOGGING
+#define HEREC(__color$) EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__), true, __color$)
 #define HERE() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__))
 #define HEREX() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__), false)
+#define HEREXC(__color$) EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__), false, __color$)
+#define HEREXCT(__color$) EnterLeave __here(EnterLeave::concat(std::to_string(this), __PRETTY_FUNCTION__, __FILE__), false, __color$)
 #else
 #define HERE() ((void)0)
 #define HEREX() ((void)0)

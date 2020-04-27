@@ -16,6 +16,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/local_client.h"
 
 #include <utility>
+#include <memory>
 
 #include "absl/memory/memory.h"
 #include "llvm/ADT/Triple.h"
@@ -172,7 +173,8 @@ LocalExecutable::RunHelper(const absl::Span<const Shape* const> argument_shapes,
 StatusOr<ScopedShapedBuffer> LocalExecutable::Run(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
-  HERE();
+  std::cout << this << std::endl << std::flush;
+  HEREXCT(Color::FG_MAGENTA);
   std::vector<const Shape*> argument_shapes;
   argument_shapes.reserve(arguments.size());
   for (const ShapedBuffer* const arg : arguments) {
@@ -233,7 +235,7 @@ static void DumpOutputsAndSaveSnapshot(const Backend* backend,
 StatusOr<ScopedShapedBuffer> LocalExecutable::RunAsync(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
-  HERE();
+  //HERE();
   std::vector<const Shape*> argument_shapes;
   argument_shapes.reserve(arguments.size());
   for (const ShapedBuffer* const arg : arguments) {
@@ -343,7 +345,8 @@ StatusOr<std::vector<std::unique_ptr<LocalExecutable>>> LocalClient::Compile(
     const XlaComputation& computation,
     const absl::Span<const Shape* const> argument_layouts,
     const ExecutableBuildOptions& options) {
-  HERE();
+  //HERE();
+  HEREX();
   ExecutableBuildOptions updated_options = options;
   if (options.device_ordinal() == -1) {
     updated_options.set_device_ordinal(default_device_ordinal());

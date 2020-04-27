@@ -82,7 +82,7 @@ struct Backend::IntraOpThreadPool {
 
 /* static */ StatusOr<std::unique_ptr<Backend>> Backend::CreateBackend(
     const BackendOptions& options) {
-  HERE();
+  //HERE();
   se::Platform* platform = options.platform();
   TF_ASSIGN_OR_RETURN(auto compiler, Compiler::GetForPlatform(platform));
   TF_ASSIGN_OR_RETURN(
@@ -130,7 +130,7 @@ Backend::Backend(se::Platform* platform, Compiler* compiler,
       transfer_manager_(transfer_manager),
       computation_placer_(computation_placer),
       stream_executors_(stream_executors.begin(), stream_executors.end()) {
-  HERE();
+  //HERE();
   // Create a memory allocator for the valid stream executors.
   memory_allocator_ = absl::make_unique<se::StreamExecutorMemoryAllocator>(
       platform, stream_executors_);
