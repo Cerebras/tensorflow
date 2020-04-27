@@ -1,1 +1,4 @@
-bazel --output_user_root=/spare/bazel-cache-gcc-cerebras build --config=mkl --strip=never --copt=-fdiagnostics-color //tensorflow/tools/pip_package:build_pip_package
+export CC=/opt/gcc-6.3.0/bin/gcc
+export CXX=/opt/gcc-6.3.0/bin/g++
+
+PATH=/opt/python3.6c/bin:$PATH bazel --output_user_root=/spare/bazel-cache-gcc-cerebras build --define framework_shared_object=false --cxxopt='-std=c++14' --config=mkl --strip=never --copt=-fdiagnostics-color //tensorflow/tools/pip_package:build_pip_package
