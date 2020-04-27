@@ -247,6 +247,11 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
   Status s;
   SessionOptions sess_options;
   sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_memory_optimization(RewriterConfig::NO_MEM_OPT);
+  const bool disable_arithmetic_optimizer = get_env_bool("DISABLE_ARITHMETIC_OPTIMIZER", false);
+  if (disable_arithmetic_optimizer==true){
+    sess_options.config.mutable_graph_options()->mutable_rewrite_options()->set_arithmetic_optimization(RewriterConfig::OFF);
+  }
+
   DeviceMgr* device_mgr;
   DeviceSet dev_set;
   // XLA_LOG == 0, no prints
@@ -410,6 +415,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
     compile_options.client = soc.ValueOrDie();
     compile_options.device_type = device_type;
     compile_options.flib_def = client_graph->flib_def.get();
+    // compile_options.alias_passthrough_params = true;
 
     NameAttrList function;
     function.set_name(fdef.signature().name());
@@ -417,8 +423,9 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     XlaCompiler compiler(compile_options);
     XlaCompiler::CompilationResult result;
-
-    s = compiler.CompileFunction(XlaCompiler::CompileOptions(), function,
+    XlaCompiler::CompileOptions compiler_compile_options;
+    compiler_compile_options.return_updated_values_for_all_resources=true;
+    s = compiler.CompileFunction(compiler_compile_options, function,
                                  xla_args, &result);
     if (!s.ok()) LOG(ERROR) << "Couldn't compile to xla: " << s.error_message();
 
@@ -433,7 +440,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
         result.computation->GetProgramShape();
     xla::ProgramShape program_shape = program_shape_status.ValueOrDie();
     xla::HloModuleConfig module_config = xla::HloModuleConfig(program_shape);
-
+    // module_config.set_alias_passthrough_params(true);
     xla::StatusOr<std::unique_ptr<xla::HloModule>> hlo_module_status =
         xla::HloModule::CreateFromProto(hmod, module_config);
     std::unique_ptr<xla::HloModule> hlo_module =
@@ -443,28 +450,32 @@ xla::HloModuleProto ExtractHloFromGraphDef(const GraphDef& in_graph,
 
     // adding passes we wish to run
     const bool disable_CallInliner = get_env_bool("DISABLE_CALL_INLINER", false);
-    const bool disable_HloSubcomputationUnification = get_env_bool("DISABLE_HLO_SUBCOMPUTATION_UNIFICATION", false);
+    const bool disable_HloSubcomputationUnification = get_env_bool("DISABLE_HLO_SUBCOMPUTATION_UNIFICATION", true);
     const bool disable_HloCSE_false = get_env_bool("DISABLE_HLO_CSE_FALSE", false);
     const bool disable_AlgebraicSimplifier = get_env_bool("DISABLE_ALGEBRAIC_SIMPLIFIER", false);
     const bool disable_WhileLoopSimplifier = get_env_bool("DISABLE_WHILE_LOOP_SIMPLIFIER", false);
-    const bool disable_ReshapeMover = get_env_bool("DISABLE_RESHAPE_MOVER", false);
+    const bool disable_ReshapeMover = get_env_bool("DISABLE_RESHAPE_MOVER", true);
     const bool disable_HloConstantFolding = get_env_bool("DISABLE_HLO_CONSTANT_FOLDING", false);
     const bool disable_HloCSE_true = get_env_bool("DISABLE_HLO_CSE_TRUE", false);
     const bool disable_HloDCE = get_env_bool("DISABLE_HLO_DCE", false);
     const bool disable_FlattenCallGraph = get_env_bool("DISABLE_FLATTEN_CALL_GRAPH", false);
-
+    const bool disable_minimize_broadcasts = get_env_bool("DISABLE_MINIMIZE_BROADCASTS", false);
+    const bool disable_hoist_common_factor_out_of_aggregation = get_env_bool("DISABLE_HOIST_COMMON_FACTOR", false);
 
     if(get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG) {
-      std::cout << "DISABLE_CALL_INLINER: "<< disable_CallInliner<<"\n";
-      std::cout << "DISABLE_HLO_SUBCOMPUTATION_UNIFICATION: "<< disable_HloSubcomputationUnification<<"\n";
-      std::cout << "DISABLE_HLO_CSE_FALSE: "<< disable_HloCSE_false<<"\n";
-      std::cout << "DISABLE_ALGEBRAIC_SIMPLIFIER: "<< disable_AlgebraicSimplifier<<"\n";
-      std::cout << "DISABLE_WHILE_LOOP_SIMPLIFIER: "<< disable_WhileLoopSimplifier<<"\n";
-      std::cout << "DISABLE_RESHAPE_MOVER: "<< disable_ReshapeMover<<"\n";
-      std::cout << "DISABLE_HLO_CONSTANT_FOLDING: "<< disable_HloConstantFolding<<"\n";
-      std::cout << "DISABLE_HLO_CSE_TRUE: "<< disable_HloCSE_true<<"\n";
-      std::cout << "DISABLE_HLO_DCE: "<< disable_HloDCE<<"\n";
-      std::cout << "DISABLE_FLATTEN_CALL_GRAPH: "<< disable_FlattenCallGraph<<"\n";
+      std::cout << "DISABLE_CALL_INLINER: " << disable_CallInliner << "\n";
+      std::cout << "DISABLE_HLO_SUBCOMPUTATION_UNIFICATION: "<< disable_HloSubcomputationUnification << "\n";
+      std::cout << "DISABLE_HLO_CSE_FALSE: " << disable_HloCSE_false << "\n";
+      std::cout << "DISABLE_ALGEBRAIC_SIMPLIFIER: " << disable_AlgebraicSimplifier << "\n";
+      std::cout << "DISABLE_WHILE_LOOP_SIMPLIFIER: " << disable_WhileLoopSimplifier << "\n";
+      std::cout << "DISABLE_RESHAPE_MOVER: " << disable_ReshapeMover<< "\n";
+      std::cout << "DISABLE_HLO_CONSTANT_FOLDING: " << disable_HloConstantFolding << "\n";
+      std::cout << "DISABLE_HLO_CSE_TRUE: " << disable_HloCSE_true << "\n";
+      std::cout << "DISABLE_HLO_DCE: " << disable_HloDCE << "\n";
+      std::cout << "DISABLE_FLATTEN_CALL_GRAPH: " << disable_FlattenCallGraph << "\n";
+      std::cout << "DISABLE_ARITHMETIC_OPTIMIZER" << disable_arithmetic_optimizer << "\n";
+      std::cout << "DISABLE_MINIMIZE_BROADCASTS" << disable_minimize_broadcasts << "\n";
+      std::cout << "DISABLE_HOIST_COMMON_FACTOR" << disable_hoist_common_factor_out_of_aggregation << "\n";
     }
     if(disable_CallInliner==false){
       pipeline.AddPass<xla::CallInliner>();

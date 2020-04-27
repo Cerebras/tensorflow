@@ -60,6 +60,25 @@ namespace tensorflow {
 namespace grappler {
 namespace {
 
+bool is_true(const char *s) {
+    if (s && *s) {
+        const char c = ::tolower(*s);
+        if (c == 'y' || c == 't') {
+            return true;
+        }
+        return atoi(s) > 0;
+    }
+    return false;
+}
+
+bool get_env_bool(const char *s, const bool dflt) {
+    const char *v = getenv(s);
+    if (v && *v) {
+      return is_true(v);
+    }
+    return dflt;
+}
+
 // Mark nodes created or optimized by a stage with a tag.
 constexpr char kAddOpsRewriteTag[] =
     "_grappler:ArithmeticOptimizer:AddOpsRewriteStage";
@@ -3545,7 +3564,10 @@ Status ArithmeticOptimizer::SimplifyArithmeticOps(bool can_use_shapes) {
   // name.
   const auto stop = [](const string& result) { return !result.empty(); };
   GraphOptimizerStagePipeline<string> pipeline(stop);
-
+  const bool disable_minimize_broadcasts = get_env_bool("DISABLE_MINIMIZE_BROADCASTS", false);
+  const bool disable_hoist_common_factor_out_of_aggregation = get_env_bool("DISABLE_HOIST_COMMON_FACTOR", false);
+  options_.minimize_broadcasts = !disable_minimize_broadcasts;
+  options_.hoist_common_factor_out_of_aggregation = !disable_hoist_common_factor_out_of_aggregation;
   if (options_.combine_add_to_addn && can_use_shapes)
     pipeline.AddStage<AddOpsRewriteStage>(ctx, ctx_ext);
   if (options_.fold_conjugate_into_transpose)
