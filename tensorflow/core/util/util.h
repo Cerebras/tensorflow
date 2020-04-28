@@ -198,7 +198,7 @@ public:
 #define HERE() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__))
 #define HEREX() EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__), false)
 #define HEREXC(__color$) EnterLeave __here(EnterLeave::concat(nullptr, __PRETTY_FUNCTION__, __FILE__), false, __color$)
-#define HEREXCT(__color$) EnterLeave __here(EnterLeave::concat(std::to_string(this), __PRETTY_FUNCTION__, __FILE__), false, __color$)
+#define HEREXCT(__color$) EnterLeave __here(EnterLeave::concat(std::to_string(this).c_str(), __PRETTY_FUNCTION__, __FILE__), false, __color$)
 #else
 #define HERE() ((void)0)
 #define HEREX() ((void)0)
