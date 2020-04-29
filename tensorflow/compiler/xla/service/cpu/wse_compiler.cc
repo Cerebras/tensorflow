@@ -263,8 +263,8 @@ StatusOr<std::unique_ptr<HloModule>> WseCompiler::RunHloPasses(
     se::DeviceMemoryAllocator* /*device_allocator*/) {
   HERE();
 #if 1
-  save_msg(module->ToProto(), "wse_hlom_in", save_msg_counter);
-  dump_inputs_outputs(*module);
+  //save_msg(module->ToProto(), "wse_hlom_in", save_msg_counter);
+  //dump_inputs_outputs(*module);
   return tensorflow::wse::RunHlo(module);
 #else
   std::cout << "SKIPPING WSE HLO COMPILE" << std::endl << std::flush;
@@ -282,8 +282,8 @@ StatusOr<std::unique_ptr<Executable>> WseCompiler::RunBackend(
     std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
     se::DeviceMemoryAllocator* device_allocator) {
   //HERE();
-  save_msg(module->ToProto(), "wse_hlom_out", save_msg_counter);
-  ++save_msg_counter;
+  //save_msg(module->ToProto(), "wse_hlom_out", save_msg_counter);
+  //++save_msg_counter;
   return Status(tensorflow::error::UNIMPLEMENTED, "Cerebras WSE RunBackend() not yet implemented");
 }
 

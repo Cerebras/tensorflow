@@ -14,6 +14,9 @@
 #include "tensorflow/compiler/xla/service/layout_assignment.h"
 #include "tensorflow/compiler/xla/service/reshape_mover.h"
 #include "tensorflow/compiler/xla/service/while_loop_simplifier.h"
+#include "tensorflow/compiler/xla/service/hlo_computation.h"
+#include "tensorflow/compiler/xla/service/hlo.pb.h"
+#include "tensorflow/compiler/xla/xla_data.pb.h"
 
 #include <stdexcept>
 #include <string>
@@ -110,10 +113,25 @@ xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloMo
     if (verbose) {
       LOG(INFO) << "Done HLO Optimization\n";
     }
+
+    if (save_messages) {
+      std::string out_graph;
+      hmod.SerializeToString(&out_graph);
+
+      if (save_messages) {
+        FILE *f = fopen("xla_module.pbtxt", "wb");
+        assert(f);
+        fwrite(out_graph.data(), out_graph.size(), 1, f);
+        fclose(f);
+        save_msg(hmod, "xla_module.json");
+      }
+    }
+
   }
 
   return std::move(hlo_module);
 }
 
-}
-}
+}  // namespace wse
+}  // namespace tensorflow
+
