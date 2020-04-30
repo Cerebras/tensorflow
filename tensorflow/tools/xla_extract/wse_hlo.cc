@@ -18,6 +18,8 @@
 #include "tensorflow/compiler/xla/service/hlo.pb.h"
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
+#include <google/protobuf/util/json_util.h>
+
 #include <stdexcept>
 #include <string>
 
@@ -32,7 +34,6 @@ xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloMo
   if (verbose) {
     LOG(INFO) << "xla args in correct order and matches fdef\n";
   }
-  xla::HloModuleProto hmod;
   {
     xla::HloPassPipeline pipeline("Interpreter");
 
@@ -114,18 +115,20 @@ xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloMo
       LOG(INFO) << "Done HLO Optimization\n";
     }
 
-    if (save_messages) {
-      std::string out_graph;
-      hmod.SerializeToString(&out_graph);
+    //if (save_messages) {
+      //std::string out_graph;
+      //hlo_module->ToProto().SerializeToString(&out_graph);
 
-      if (save_messages) {
-        FILE *f = fopen("xla_module.pbtxt", "wb");
-        assert(f);
-        fwrite(out_graph.data(), out_graph.size(), 1, f);
-        fclose(f);
-        //save_msg(hmod, "xla_module.json");
-      }
-    }
+      //if (save_messages) {
+//        FILE *f = fopen("wse_hlo_xla.pbtxt", "wb");
+//        assert(f);
+//        fwrite(out_graph.data(), out_graph.size(), 1, f);
+//        fclose(f);
+//      std::string
+//      ::google::protobuf::util::MessageToJsonString(hlo_module->ToProto(), );
+        save_msg(hlo_module->ToProto(), "wse_hlo_xla.json");
+      //}
+    //}
 
   }
 

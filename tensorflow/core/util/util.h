@@ -204,17 +204,7 @@ public:
 #define HEREX() ((void)0)
 #endif
 
-//#include "external/protobuf_archive/src/google/protobuf/util/json_util.h"
-
-template <typename MSG>
-inline std::string m2j(const MSG& msg) {
-//  std::string json;
-//  google::protobuf::util::JsonPrintOptions op;
-//  op.add_whitespace = true;
-//  google::protobuf::util::MessageToJsonString(msg, &json, op);
-//  return json;
-  return "";
-}
+#include <google/protobuf/util/json_util.h>
 
 /**
  * Convenient endl with flush for debugging
@@ -223,12 +213,11 @@ inline std::string m2j(const MSG& msg) {
 
 template <typename MSG>
 std::string msg_to_json(const MSG& msg) {
-//  std::string json;
-//  google::protobuf::util::JsonPrintOptions op;
-//  op.add_whitespace = true;
-//  google::protobuf::util::MessageToJsonString(msg, &json, op);
-//  return std::move(json);
-  return "";
+  std::string json;
+  google::protobuf::util::JsonPrintOptions op;
+  op.add_whitespace = true;
+  google::protobuf::util::MessageToJsonString(msg, &json, op);
+  return std::move(json);
 }
 
 template <typename MSG>

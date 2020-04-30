@@ -213,9 +213,6 @@ StatusOr<Literal> Client::ComputeConstant(const XlaComputation& computation,
 }
 
 StatusOr<XlaComputation> Client::LoadSnapshot(const HloSnapshot& module) {
-  if (verbose) {
-    std::cout << m2j(module) << std::endl;
-  }
   TF_RET_CHECK(module.has_hlo() && module.hlo().has_hlo_module());
   return XlaComputation(module.hlo().hlo_module());
 }
