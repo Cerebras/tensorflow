@@ -236,7 +236,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(GraphDef&& in_graph,
   tensorflow::FunctionDefLibrary fdef_lib = client_graph->flib_def->ToProto();
 
   if (save_messages) {
-    save_msg(fdef_lib , "FunctionDefLibrary.json");
+    //save_msg(fdef_lib , "FunctionDefLibrary.json");
   }
 
   auto fdef_iter =
@@ -268,7 +268,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(GraphDef&& in_graph,
   const FunctionDef& fdef = *fdef_iter;
 
   if (save_messages) {
-    save_msg(fdef, "fdef.json");
+    //save_msg(fdef, "fdef.json");
   }
 
   std::vector<XlaCompiler::Argument> xla_args = BuildXlaArgsFromClientGraph(client_graph);
@@ -419,7 +419,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(GraphDef&& in_graph,
     }
 
     if (save_messages) {
-      save_msg(hmod, "hmod_in.json");
+      //save_msg(hmod, "hmod_in.json");
     }
 
     // hlo optimizations
@@ -440,7 +440,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(GraphDef&& in_graph,
     hmod = hlo_run_result.ValueOrDie().get()->ToProto();
 
     if (save_messages) {
-      save_msg(hmod, "hmod_out_1.json");
+      //save_msg(hmod, "hmod_out_1.json");
     }
 
     auto* comps = hmod.mutable_computations();
@@ -467,7 +467,7 @@ xla::HloModuleProto ExtractHloFromGraphDef(GraphDef&& in_graph,
   }
 
   if (save_messages) {
-    save_msg(hmod, "hmod_out_2.json");
+    //save_msg(hmod, "hmod_out_2.json");
   }
 
   return std::move(hmod);
@@ -480,7 +480,7 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
   gdef.ParseFromString(graph_def_msg);
 
   if (save_messages) {
-    save_msg(gdef, "graph.json");
+    //save_msg(gdef, "graph.json");
   }
 
   auto hmod = ExtractHloFromGraphDef(std::move(gdef), target_node);
@@ -491,7 +491,7 @@ Status xla_extract_via_strings(const std::string& graph_def_msg,
     assert(f);
     fwrite(out_graph->data(), out_graph->size(), 1, f);
     fclose(f);
-    save_msg(hmod, "xla_module.json");
+    //save_msg(hmod, "xla_module.json");
   }
 
   if (get_env_int("XLA_LOG", NO_LOG) >= INFO_LOG) {

@@ -100,7 +100,7 @@ Status LowerFunctionalOpsPass::Run(
 
   FunctionLibraryDefinition* flib_def = options.flib_def;
 
-  save_msg(flib_def->ToProto(), "LowerFunctionalOpsPass.json");
+  //save_msg(flib_def->ToProto(), "LowerFunctionalOpsPass.json");
 
   if (flib_def == nullptr) {
     return errors::Internal(

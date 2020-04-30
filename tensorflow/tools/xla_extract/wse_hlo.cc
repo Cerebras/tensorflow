@@ -123,7 +123,7 @@ xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloMo
         assert(f);
         fwrite(out_graph.data(), out_graph.size(), 1, f);
         fclose(f);
-        save_msg(hmod, "xla_module.json");
+        //save_msg(hmod, "xla_module.json");
       }
     }
 
