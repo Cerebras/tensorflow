@@ -1,4 +1,1 @@
-#!/bin/bash
-set -e
-bazel build //tensorflow/tools/pip_package:build_pip_package
-bazel-bin/tensorflow/tools/pip_package/build_pip_package ~/master_wheel/
+bazel build --config=mkl --strip=never --copt=-fdiagnostics-color //tensorflow/tools/pip_package:build_pip_package
