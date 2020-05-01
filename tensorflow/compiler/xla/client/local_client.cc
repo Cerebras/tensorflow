@@ -16,6 +16,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/local_client.h"
 
 #include <utility>
+#include <memory>
 
 #include "absl/memory/memory.h"
 #include "llvm/ADT/Triple.h"
@@ -26,6 +27,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/service/source_map_util.h"
 #include "tensorflow/compiler/xla/service/stream_pool.h"
 #include "tensorflow/compiler/xla/status_macros.h"
+#include "tensorflow/core/util/util.h"
 
 using xla::source_map_util::InvalidParameterArgument;
 
@@ -263,6 +265,8 @@ StatusOr<std::unique_ptr<LocalExecutable>> LocalClient::Compile(
     const XlaComputation& computation,
     const absl::Span<const Shape* const> argument_layouts,
     const ExecutableBuildOptions& options) {
+  //HERE();
+  HEREX();
   ExecutableBuildOptions updated_options = options;
   if (options.device_ordinal() == -1) {
     updated_options.set_device_ordinal(default_device_ordinal());

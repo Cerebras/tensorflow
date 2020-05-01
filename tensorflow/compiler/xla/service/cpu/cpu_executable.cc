@@ -44,6 +44,8 @@ limitations under the License.
 #include "tensorflow/core/platform/mem.h"
 #include "tensorflow/core/platform/mutex.h"
 #include "tensorflow/core/platform/types.h"
+#include "tensorflow/stream_executor/device_memory_allocator.h"
+#include "tensorflow/core/util/util.h"
 #include "tensorflow/stream_executor/host/host_stream.h"
 
 namespace xla {

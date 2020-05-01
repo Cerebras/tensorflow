@@ -35,6 +35,7 @@ cc_library(
     name = "partial_run_mgr",
     srcs = ["partial_run_mgr.cc"],
     hdrs = ["partial_run_mgr.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":worker_interface",
         "//tensorflow/core:framework",
@@ -58,6 +59,7 @@ cc_library(
     name = "message_wrappers",
     srcs = ["message_wrappers.cc"],
     hdrs = ["message_wrappers.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/core:framework",
         "//tensorflow/core:master_proto_cc",
@@ -89,6 +91,7 @@ cc_library(
         "cluster_function_library_runtime.h",
         "worker_session.h",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":graph_mgr",
         ":worker_cache",
@@ -125,6 +128,7 @@ cc_library(
     name = "session_mgr",
     srcs = ["session_mgr.cc"],
     hdrs = ["session_mgr.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":graph_mgr",
         ":remote_device",
@@ -163,6 +167,7 @@ cc_library(
 cc_library(
     name = "tensor_coding",
     srcs = ["tensor_coding.cc"],
+    copts = [ "-ggdb3", "-O0" ],
     hdrs = [
         "tensor_coding.h",
     ],
@@ -180,6 +185,7 @@ cc_library(
     hdrs = [
         "worker_interface.h",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":call_options",
         ":message_wrappers",
@@ -195,6 +201,7 @@ tf_cuda_library(
     hdrs = [
         "worker.h",
     ],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":graph_mgr",
         ":partial_run_mgr",
@@ -214,6 +221,7 @@ cc_library(
     name = "call_options",
     srcs = ["call_options.cc"],
     hdrs = ["call_options.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/core:lib",
     ],
@@ -233,6 +241,7 @@ tf_cc_test(
 cc_library(
     name = "cancellable_call",
     hdrs = ["cancellable_call.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":call_options",
         ":worker_cache",
@@ -281,6 +290,7 @@ cc_library(
     name = "remote_device",
     srcs = ["remote_device.cc"],
     hdrs = ["remote_device.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":worker_cache",
         ":worker_interface",
@@ -307,6 +317,7 @@ cc_library(
     name = "master",
     srcs = ["master.cc"],
     hdrs = ["master.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":call_options",
         ":master_env",
@@ -330,6 +341,7 @@ cc_library(
     name = "master_session",
     srcs = ["master_session.cc"],
     hdrs = ["master_session.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":call_options",
         ":master_env",
@@ -354,6 +366,7 @@ cc_library(
     name = "local_master",
     srcs = ["local_master.cc"],
     hdrs = ["local_master.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":master",
         ":master_interface",
@@ -376,6 +389,7 @@ cc_library(
     name = "scheduler",
     srcs = ["scheduler.cc"],
     hdrs = ["scheduler.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/core:core_cpu_internal",
         "//tensorflow/core:framework",
@@ -388,7 +402,7 @@ cc_library(
     name = "base_rendezvous_mgr",
     srcs = ["base_rendezvous_mgr.cc"],
     hdrs = ["base_rendezvous_mgr.h"],
-    copts = tf_copts(),
+    copts = tf_copts() + [ "-ggdb3", "-O0" ],
     deps = [
         ":rendezvous_mgr_interface",
         ":worker_cache",
@@ -417,6 +431,7 @@ cc_library(
     name = "graph_mgr",
     srcs = ["graph_mgr.cc"],
     hdrs = ["graph_mgr.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":message_wrappers",
         ":rendezvous_mgr_interface",
@@ -437,6 +452,7 @@ cc_library(
     name = "worker_cache_partial",
     srcs = ["worker_cache_partial.cc"],
     hdrs = ["worker_cache_partial.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":worker_cache",
         ":worker_interface",
@@ -451,6 +467,7 @@ cc_library(
     name = "worker_cache_logger",
     srcs = ["worker_cache_logger.cc"],
     hdrs = ["worker_cache_logger.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/core:core_cpu_internal",
         "//tensorflow/core:lib",
@@ -462,6 +479,7 @@ cc_library(
     name = "server_lib",
     srcs = ["server_lib.cc"],
     hdrs = ["server_lib.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         "//tensorflow/core:framework_internal",
         "//tensorflow/core:lib",
@@ -484,6 +502,7 @@ cc_library(
     name = "rpc_collective_executor_mgr",
     srcs = ["rpc_collective_executor_mgr.cc"],
     hdrs = ["rpc_collective_executor_mgr.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":collective_param_resolver_distributed",
         ":collective_rma_distributed",
@@ -517,6 +536,7 @@ cc_library(
     name = "collective_rma_distributed",
     srcs = ["collective_rma_distributed.cc"],
     hdrs = ["collective_rma_distributed.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":cancellable_call",
         ":request_id",
@@ -553,6 +573,7 @@ cc_library(
     name = "collective_param_resolver_distributed",
     srcs = ["collective_param_resolver_distributed.cc"],
     hdrs = ["collective_param_resolver_distributed.h"],
+    copts = [ "-ggdb3", "-O0" ],
     deps = [
         ":cancellable_call",
         ":device_resolver_distributed",

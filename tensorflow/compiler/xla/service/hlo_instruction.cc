@@ -3658,7 +3658,7 @@ const std::vector<HloInstruction*>& HloInstruction::fused_parameters() const {
   return Cast<HloFusionInstruction>(this)->fused_parameters();
 }
 
-const bool HloInstruction::IsMultiOutputFusion() const {
+bool HloInstruction::IsMultiOutputFusion() const {
   const HloFusionInstruction* fusion = DynCast<HloFusionInstruction>(this);
   return fusion != nullptr && fusion->IsMultiOutputFusion();
 }

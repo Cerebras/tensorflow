@@ -243,7 +243,8 @@ class XLACompileContext(control_flow_ops.XLAControlFlowContext):
       with ops.control_dependencies(None):
         self.Enter()
         external_control_inputs = [
-            array_ops.identity(x.outputs[0]).op
+            #array_ops.identity(x.outputs[0]).op
+            array_ops.identity(x.outputs[0], name=x.outputs[0].op.name).op  # cjolivier01@gmail.com for Cerebras
             for x in external_control_inputs
             if x.outputs
         ]
@@ -345,7 +346,8 @@ def _compile_internal(computation, inputs=None):
     # Add identity ops so even unused inputs are 'consumed' by the
     # computation.
     flat_inputs = [
-        array_ops.identity(x, name='input_{}'.format(i))
+        #array_ops.identity(x, name='input_{}'.format(i))
+        array_ops.identity(x, name=x.op.name)  # cjolivier01@gmail.com for Cerebras
         for i, x in enumerate(flat_inputs)
     ]
 
@@ -384,7 +386,8 @@ def _compile_internal(computation, inputs=None):
     return control_flow_ops.group(control_deps, name='output_0')
 
   output_tensors = [
-      xla_ops.xla_cluster_output(o, name='output{}'.format(i))
+      # xla_ops.xla_cluster_output(o, name='output{}'.format(i))
+      xla_ops.xla_cluster_output(o, name=o.op.name)  # cjolivier01@gmail.com for Cerebras
       for i, o in enumerate(output_tensors)
   ]
 
@@ -392,8 +395,9 @@ def _compile_internal(computation, inputs=None):
     # Wraps the outputs in identity operators that carries control
     # dependencies.
     output_tensors = [
-        array_ops.identity(o, name='output_%d' % i)
-        for i, o in enumerate(output_tensors)
+      # array_ops.identity(o, name='output_%d' % i)
+      array_ops.identity(o, name=output_tensors[i].op.name)  # cjolivier01@gmail.com for Cerebras
+      for i, o in enumerate(output_tensors)
     ]
 
   # If `computation` returned non-flat output structure, pack output tensors
@@ -487,7 +491,8 @@ def _postprocess_flat_outputs(outputs):
   new_output_tensors = []
   for t in output_tensors:
     with ops.device(t.device if t.device else ''):
-      new_output_tensors.append(array_ops.identity(t))
+      #new_output_tensors.append(array_ops.identity(t))
+      new_output_tensors.append(array_ops.identity(t, name=t.op.name))  # cjolivier01@gmail.com for Cerebras
 
   return new_output_tensors, output_operations
 
@@ -522,7 +527,8 @@ def _postprocess_non_flat_outputs(outputs):
     # Makes sure even pass-through inputs/outputs are touched in compile
     # context by creating an Identity node inside compile context.
     with ops.device(o.device if o.device else ''):
-      new_output_tensors.append(array_ops.identity(o))
+      # new_output_tensors.append(array_ops.identity(o))
+      new_output_tensors.append(array_ops.identity(o, name=o.op.name))  # cjolivier01@gmail.com for Cerebras
 
   return new_output_tensors, []
 
