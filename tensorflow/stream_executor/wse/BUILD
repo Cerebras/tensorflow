@@ -7,7 +7,7 @@ load(
 )
 load("//tensorflow:tensorflow.bzl", "tf_copts")
 # load("@local_config_wse//wse:build_defs.bzl", "if_wse_is_configured")
-load("//tensorflow/core/platform:build_config_root.bzl", "if_static")
+load("//tensorflow/core/platform:default/build_config_root.bzl", "if_static")
 
 package(
     default_visibility = [":friends"],
