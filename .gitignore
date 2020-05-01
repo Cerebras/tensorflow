@@ -43,3 +43,15 @@ gradleBuild
 Podfile.lock
 Pods
 xcuserdata
+
+# Cerebras
+env
+.vscode
+.scripts
+browse.vsc.*
+cmake-build-*
+#xla_client
+.py_root
+CMakeLists.txt
+/*.pbtxt
+/*.json

@@ -75,6 +75,7 @@ cc_library(
     name = "xla_cpu_device",
     srcs = ["xla_cpu_device.cc"],
     visibility = [":friends"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":flags",
         ":jit_compilation_passes",
@@ -95,6 +96,7 @@ cc_library(
     name = "xla_gpu_device",
     srcs = ["xla_gpu_device.cc"],
     visibility = [":friends"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":jit_compilation_passes",
         ":xla_device",
@@ -115,6 +117,7 @@ cc_library(
     name = "xla_interpreter_device",
     srcs = ["xla_interpreter_device.cc"],
     visibility = [":friends"],
+    copts = ["-ggdb3", "-O0"],
     deps = [
         ":jit_compilation_passes",
         ":xla_device",
@@ -207,6 +210,7 @@ cc_library(
         "xla_device_context.h",
         "xla_device_ops.h",
     ],
+    copts = ["-ggdb3", "-O0"],
     deps = XLA_DEVICE_DEPS,
 )
 

@@ -178,7 +178,7 @@ bool HloOpcodeIsVariadic(HloOpcode opcode);
 absl::optional<int> HloOpcodeArity(HloOpcode opcode);
 
 // Returns the number of HloOpcode values.
-inline const uint32_t HloOpcodeCount() {
+inline uint32_t HloOpcodeCount() {
 #define HLO_COUNT_ONE(...) +1
 #define HLO_XLIST_LENGTH(list) list(HLO_COUNT_ONE)
   return HLO_XLIST_LENGTH(HLO_OPCODE_LIST);
