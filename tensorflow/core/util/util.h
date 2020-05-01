@@ -127,7 +127,7 @@ inline std::string to_string(const T& obj) {
 #include <sys/syscall.h>
 #include <zconf.h>
 
-#define WSE_DEBUG_LOGGING
+//#define WSE_DEBUG_LOGGING
 
 #ifdef WSE_DEBUG_LOGGING
 
