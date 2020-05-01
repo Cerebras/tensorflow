@@ -52,6 +52,7 @@ limitations under the License.
 #include "tensorflow/core/profiler/lib/traceme.h"
 #include "tensorflow/core/protobuf/worker.pb.h"
 #include "tensorflow/core/util/env_var.h"
+#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 
@@ -413,6 +414,7 @@ void GraphMgr::ExecuteAsync(const string& handle, const int64 step_id,
                             MutableRunGraphResponseWrapper* response,
                             CancellationManager* cancellation_manager,
                             const NamedTensors& in, StatusCallback done) {
+  //HERE();
   const uint64 start_time_usecs = Env::Default()->NowMicros();
   profiler::TraceMe activity(
       [step_id] { return absl::StrCat("RunGraph#id=", step_id, "#"); },

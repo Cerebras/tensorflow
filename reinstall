@@ -1,0 +1,1 @@
+bazel-bin/tensorflow/tools/pip_package/build_pip_package ~/master_wheel/ && pip install --force ~/master_wheel/tensorflow-2.1.0-cp36-cp36m-linux_x86_64.whl

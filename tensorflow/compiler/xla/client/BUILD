@@ -28,6 +28,7 @@ cc_library(
     name = "global_data",
     srcs = ["global_data.cc"],
     hdrs = ["global_data.h"],
+    copts = [ "-g", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla:service_interface",
         "//tensorflow/compiler/xla:types",
@@ -43,6 +44,7 @@ cc_library(
     name = "padding",
     srcs = ["padding.cc"],
     hdrs = ["padding.h"],
+    copts = [ "-g", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla:statusor",
         "//tensorflow/compiler/xla:types",
@@ -66,6 +68,7 @@ cc_library(
     name = "client",
     srcs = ["client.cc"],
     hdrs = ["client.h"],
+    copts = [ "-g", "-O0" ],
     deps = [
         ":global_data",
         ":xla_computation",
@@ -91,6 +94,7 @@ cc_library(
     name = "executable_build_options",
     srcs = ["executable_build_options.cc"],
     hdrs = ["executable_build_options.h"],
+    copts = [ "-g", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla:debug_options_flags",
         "//tensorflow/compiler/xla:shape_util",
@@ -109,6 +113,7 @@ cc_library(
     name = "local_client",
     srcs = ["local_client.cc"],
     hdrs = ["local_client.h"],
+    copts = [ "-g", "-O0" ],
     deps = [
         ":client",
         ":executable_build_options",
@@ -197,6 +202,7 @@ cc_library(
     name = "xla_computation",
     srcs = ["xla_computation.cc"],
     hdrs = ["xla_computation.h"],
+    copts = [ "-g", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         "//tensorflow/compiler/xla:shape_util",
@@ -212,6 +218,7 @@ cc_library(
     name = "xla_builder",
     srcs = ["xla_builder.cc"],
     hdrs = ["xla_builder.h"],
+    copts = [ "-g", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":padding",

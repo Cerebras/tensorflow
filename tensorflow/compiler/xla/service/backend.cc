@@ -36,6 +36,7 @@ limitations under the License.
 #include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
+#include "tensorflow/core/util/util.h"
 
 namespace xla {
 
@@ -81,6 +82,7 @@ struct Backend::IntraOpThreadPool {
 
 /* static */ StatusOr<std::unique_ptr<Backend>> Backend::CreateBackend(
     const BackendOptions& options) {
+  //HERE();
   se::Platform* platform = options.platform();
   TF_ASSIGN_OR_RETURN(auto compiler, Compiler::GetForPlatform(platform));
   TF_ASSIGN_OR_RETURN(
@@ -128,6 +130,7 @@ Backend::Backend(se::Platform* platform, Compiler* compiler,
       transfer_manager_(transfer_manager),
       computation_placer_(computation_placer),
       stream_executors_(stream_executors.begin(), stream_executors.end()) {
+  //HERE();
   // Create a memory allocator for the valid stream executors.
   memory_allocator_ = absl::make_unique<se::StreamExecutorMemoryAllocator>(
       platform, stream_executors_);
@@ -165,6 +168,7 @@ tensorflow::thread::ThreadPool* Backend::eigen_intra_op_thread_pool() const {
 
 StatusOr<se::StreamExecutor*> Backend::stream_executor(
     int device_ordinal) const {
+  //HERE();
   if (device_ordinal < 0 ||
       device_ordinal > stream_executors_.back()->device_ordinal()) {
     return InvalidArgument(

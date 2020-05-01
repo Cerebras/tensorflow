@@ -147,6 +147,7 @@ COMMON_PIP_DEPS = [
     "//tensorflow/tools/docs:generate_lib",
     "//tensorflow/tools/docs:parser",
     "//tensorflow/tools/docs:py_guide_parser",
+    "//tensorflow/tools/xla_extract",
 ]
 
 # On Windows, python binary is a zip file of runfiles tree.

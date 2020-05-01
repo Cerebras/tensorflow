@@ -32,6 +32,8 @@ std::string PlatformKindString(PlatformKind kind) {
       return "ROCm";
     case PlatformKind::kOpenCL:
       return "OpenCL";
+    case PlatformKind::kWse:
+      return "WSE";
     case PlatformKind::kHost:
       return "Host";
     case PlatformKind::kMock:
@@ -56,6 +58,7 @@ bool PlatformIsRunnable(PlatformKind kind) {
     case PlatformKind::kCuda:
     case PlatformKind::kROCm:
     case PlatformKind::kOpenCL:
+    case PlatformKind::kWse:
     case PlatformKind::kHost:
       return true;
     default:
@@ -67,6 +70,7 @@ bool PlatformIsRunnableOnDevice(PlatformKind kind) {
   switch (kind) {
     case PlatformKind::kCuda:
     case PlatformKind::kROCm:
+    case PlatformKind::kWse:
     case PlatformKind::kOpenCL:
       return true;
     default:
