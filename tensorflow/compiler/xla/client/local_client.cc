@@ -174,7 +174,6 @@ StatusOr<ScopedShapedBuffer> LocalExecutable::Run(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
   std::cout << this << std::endl << std::flush;
-  HEREXCT(Color::FG_MAGENTA);
   std::vector<const Shape*> argument_shapes;
   argument_shapes.reserve(arguments.size());
   for (const ShapedBuffer* const arg : arguments) {
