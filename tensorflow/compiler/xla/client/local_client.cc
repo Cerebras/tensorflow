@@ -176,6 +176,15 @@ LocalExecutable::RunHelper(
 StatusOr<ScopedShapedBuffer> LocalExecutable::Run(
     const absl::Span<const ShapedBuffer* const> arguments,
     ExecutableRunOptions run_options) {
+<<<<<<< HEAD
+=======
+  std::cout << this << std::endl << std::flush;
+  std::vector<const Shape*> argument_shapes;
+  argument_shapes.reserve(arguments.size());
+  for (const ShapedBuffer* const arg : arguments) {
+    argument_shapes.push_back(&arg->on_host_shape());
+  }
+>>>>>>> d6cd832... fix logging compile error
   TF_ASSIGN_OR_RETURN(auto options_and_stream,
                       RunHelper(arguments, run_options));
   ExecutableRunOptions options = options_and_stream.first.run_options();
