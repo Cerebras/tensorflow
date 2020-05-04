@@ -8,7 +8,6 @@ package(
 cc_library(
     name = "xla_ops",
     srcs = ["xla_ops.cc"],
-    copts = ["-ggdb3", "-O0"],
     deps = ["//tensorflow/core:framework"],
     alwayslink = 1,
 )

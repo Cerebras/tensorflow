@@ -43,7 +43,6 @@ cc_library(
     srcs = ["tf2xla_supported_ops.cc"],
     hdrs = ["tf2xla_supported_ops.h"],
     visibility = ["//visibility:public"],
-    copts=["-ggdb3", "-O0"],
     deps = [
         ":xla_compiler",
         "//tensorflow/compiler/tf2xla/kernels:xla_ops",
@@ -236,7 +235,6 @@ cc_library(
         "xla_op_registry.h",
         "xla_resource.h",
     ],
-    copts=["-ggdb3", "-O0"],
     visibility = [":friends"],
     deps = [
         ":common",

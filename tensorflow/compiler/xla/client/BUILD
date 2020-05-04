@@ -28,7 +28,6 @@ cc_library(
     name = "global_data",
     srcs = ["global_data.cc"],
     hdrs = ["global_data.h"],
-    copts = [ "-g", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla:service_interface",
         "//tensorflow/compiler/xla:types",
@@ -199,7 +198,6 @@ cc_library(
     name = "xla_computation",
     srcs = ["xla_computation.cc"],
     hdrs = ["xla_computation.h"],
-    copts = [ "-g", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         "//tensorflow/compiler/xla:shape_util",
@@ -215,7 +213,6 @@ cc_library(
     name = "xla_builder",
     srcs = ["xla_builder.cc"],
     hdrs = ["xla_builder.h"],
-    copts = [ "-g", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":padding",

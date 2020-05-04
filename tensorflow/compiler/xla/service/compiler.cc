@@ -35,7 +35,6 @@ Compiler::ComputeBackendConfigs(const HloInstruction& hlo,
   return {};
 }
 
-
 std::unique_ptr<tensorflow::protobuf::Message>
 Compiler::ComputeDefaultBackendConfig(const HloInstruction& hlo,
                                       se::StreamExecutor* executor) const {
@@ -82,8 +81,6 @@ Compiler::GetPlatformCompilers() {
 
 /* static */ StatusOr<Compiler*> Compiler::GetForPlatform(
     const se::Platform* platform) {
-  std::cout << "Getting compiler for platform: " << platform->Name() << std::endl << std::flush;
-
   tensorflow::mutex_lock lock(platform_compiler_mutex_);
 
   auto* compilers = GetPlatformCompilers();

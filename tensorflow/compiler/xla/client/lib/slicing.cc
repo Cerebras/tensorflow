@@ -16,7 +16,6 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/lib/slicing.h"
 
 #include <limits>
-#include <vector>
 
 #include "tensorflow/compiler/xla/client/lib/arithmetic.h"
 #include "tensorflow/compiler/xla/client/lib/constants.h"
