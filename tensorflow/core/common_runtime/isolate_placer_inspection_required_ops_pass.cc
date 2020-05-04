@@ -20,7 +20,6 @@ limitations under the License.
 #include "tensorflow/core/graph/graph.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/util/dump_graph.h"
-#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 
@@ -41,9 +40,8 @@ Status IsolatePlacerInspectionRequiredOpsPass::Run(
 
   const FunctionLibraryDefinition* flib_def =
       options.flib_def == nullptr ? &graph->flib_def() : options.flib_def;
-  //save_msg(flib_def->ToProto(), "IsolatePlacerInspectionRequiredOpsPass_1.json");
   Status status = IsolatePlacerInspectionRequiredOps(*flib_def, graph);
-  //save_msg(flib_def->ToProto(), "IsolatePlacerInspectionRequiredOpsPass_2.json");
+
   if (VLOG_IS_ON(3) && status.ok()) {
     DumpGraphToFile("isolate_deep_ops_after", *graph, nullptr, "/tmp");
   }

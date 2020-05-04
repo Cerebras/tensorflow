@@ -54,7 +54,6 @@ limitations under the License.
 #include "tensorflow/core/protobuf/worker.pb.h"
 #include "tensorflow/core/public/session_options.h"
 #include "tensorflow/core/util/device_name_utils.h"
-#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 
@@ -533,7 +532,6 @@ void Master::PartialRunSetup(const PartialRunSetupRequest* req,
 
 void Master::RunStep(CallOptions* opts, const RunStepRequestWrapper* req,
                      MutableRunStepResponseWrapper* resp, MyClosure done) {
-  //HERE();
   Status s = recent_request_ids_.TrackUnique(req->request_id(),
                                              "RunStep (Master)", req);
   if (!s.ok()) {
@@ -548,7 +546,6 @@ void Master::RunStep(CallOptions* opts, const RunStepRequestWrapper* req,
   }
 
   SchedClosure([this, start_time, session, opts, req, resp, done]() {
-    //HERE();
     Status status = session->Run(opts, *req, resp);
     session->Unref();
     uint64 done_time = env_->env->NowMicros();

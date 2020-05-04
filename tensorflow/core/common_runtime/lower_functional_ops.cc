@@ -22,7 +22,6 @@ limitations under the License.
 #include "tensorflow/core/common_runtime/lower_while_op.h"
 #include "tensorflow/core/graph/graph.h"
 #include "tensorflow/core/public/session_options.h"
-#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 
@@ -97,9 +96,6 @@ Status LowerFunctionalOpsPass::Run(
   }
 
   FunctionLibraryDefinition* flib_def = options.flib_def;
-
-  //save_msg(flib_def->ToProto(), "LowerFunctionalOpsPass.json");
-
   if (flib_def == nullptr) {
     return errors::Internal(
         "Lowering If op requires a FunctionLibraryDefinition to be available.");

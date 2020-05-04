@@ -31,7 +31,6 @@ limitations under the License.
 
 namespace tensorflow {
 
-
 template <typename T>
 class SummaryScalarOp : public OpKernel {
  public:
