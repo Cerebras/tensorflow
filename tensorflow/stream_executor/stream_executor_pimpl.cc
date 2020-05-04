@@ -156,8 +156,6 @@ StreamExecutor::StreamExecutor(
     platform_kind_ = PlatformKind::kROCm;
   } else if (name == "opencl") {
     platform_kind_ = PlatformKind::kOpenCL;
-  } else if (name == "wse") {
-    platform_kind_ = PlatformKind::kWse;
   } else if (name == "host") {
     platform_kind_ = PlatformKind::kHost;
   } else {

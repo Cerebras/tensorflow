@@ -716,8 +716,3 @@ alias(
     name = "rocm_platform",
     actual = "//tensorflow/stream_executor/rocm:all_runtime",
 )
-
-alias(
-    name = "wse_platform",
-    actual = "//tensorflow/stream_executor/wse:all_runtime",
-)
