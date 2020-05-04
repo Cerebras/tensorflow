@@ -1645,7 +1645,7 @@ class HloInstruction {
 
   // Returns true if this instruction is a fusion instruction that generates
   // multiple outputs.
-  bool IsMultiOutputFusion() const;
+  const bool IsMultiOutputFusion() const;
 
   // Delegates to HloFusionInstruction::fusion_kind.
   FusionKind fusion_kind() const;
