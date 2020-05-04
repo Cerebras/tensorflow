@@ -43,7 +43,6 @@ cc_library(
     name = "padding",
     srcs = ["padding.cc"],
     hdrs = ["padding.h"],
-    copts = [ "-g", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla:statusor",
         "//tensorflow/compiler/xla:types",
@@ -67,7 +66,6 @@ cc_library(
     name = "client",
     srcs = ["client.cc"],
     hdrs = ["client.h"],
-    copts = [ "-g", "-O0" ],
     deps = [
         ":global_data",
         ":xla_computation",
@@ -93,7 +91,6 @@ cc_library(
     name = "executable_build_options",
     srcs = ["executable_build_options.cc"],
     hdrs = ["executable_build_options.h"],
-    copts = [ "-g", "-O0" ],
     deps = [
         "//tensorflow/compiler/xla:debug_options_flags",
         "//tensorflow/compiler/xla:shape_util",
@@ -111,7 +108,6 @@ cc_library(
     name = "local_client",
     srcs = ["local_client.cc"],
     hdrs = ["local_client.h"],
-    copts = [ "-g", "-O0" ],
     deps = [
         ":client",
         ":executable_build_options",

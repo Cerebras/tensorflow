@@ -24,9 +24,6 @@ limitations under the License.
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <memory>
-
-#include "tensorflow/core/util/util.h"
 
 // IWYU pragma: no_include "llvm/Config/Disassemblers.def.inc"
 // IWYU pragma: no_include "llvm/Config/Targets.def.inc"
@@ -72,7 +69,6 @@ limitations under the License.
 #include "tensorflow/compiler/xla/service/cpu/ir_emitter.h"
 #include "tensorflow/compiler/xla/service/cpu/parallel_task_assignment.h"
 #include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
-#include "tensorflow/compiler/xla/service/cpu/wse_compiler.h"
 #include "tensorflow/compiler/xla/service/dfs_hlo_visitor_with_default.h"
 #include "tensorflow/compiler/xla/service/dot_decomposer.h"
 #include "tensorflow/compiler/xla/service/dump.h"
@@ -120,7 +116,6 @@ limitations under the License.
 
 namespace xla {
 namespace cpu {
-
 using BufferInfo = cpu_function_runtime::BufferInfo;
 
 CpuAotCompilationOptions::CpuAotCompilationOptions(
@@ -156,9 +151,6 @@ CpuCompiler::CpuCompiler() {
     return true;
   }();
   (void)llvm_initialized;
-
-  // Temporary: build wse compilder as tag-along member which we'll duplicate actions to
-  wse_compiler_ = absl::make_unique<xla::wse::WseCompiler>();
 }
 
 /* static */ void CpuCompiler::InitializeLLVMTarget() {
@@ -244,8 +236,6 @@ class CollectProfileCandidates : public DfsHloVisitorWithDefault {
 Status CpuCompiler::RunHloPassesThroughLayoutAssn(
     HloModule* module, bool /*is_aot_compile*/,
     LLVMTargetMachineFeatures* target_machine_features) {
-  //HERE();
-
   HloPassPipeline pipeline("HLO passes through layout assignment");
   pipeline.AddInvariantChecker<HloVerifier>(/*layout_sensitive=*/false,
                                             /*allow_mixed_precision=*/false);
@@ -348,7 +338,6 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
 Status CpuCompiler::RunHloPassesAfterLayoutAssn(
     HloModule* module, bool is_aot_compile,
     LLVMTargetMachineFeatures* target_machine_features) {
-  //HERE();
   HloPassPipeline pipeline("HLO passes after layout assignment");
   // After layout assignment, use a layout-sensitive verifier.
   auto& after_layout_assn =
@@ -532,35 +521,9 @@ Status CreateHloProfilingArtifacts(
 
 }  // namespace
 
-StatusOr<std::vector<std::unique_ptr<Executable>>> CpuCompiler::Compile(
-  std::unique_ptr<HloModuleGroup> module_group,
-  std::vector<std::vector<se::StreamExecutor*>> stream_execs,
-  se::DeviceMemoryAllocator* device_allocator) {
-
-  if (wse_compiler_->IsEnabled()) {
-    // currently not called in pytorch path
-//    wse_compiler_->Compile(
-//        xla::wse::WseCompiler::copy(*module_group),
-//        stream_execs,
-//        device_allocator);
-  }
-  return LLVMCompiler::Compile(
-      std::move(module_group),
-      stream_execs,
-      device_allocator);
-}
-
 StatusOr<std::unique_ptr<HloModule>> CpuCompiler::RunHloPasses(
     std::unique_ptr<HloModule> module, se::StreamExecutor* /*stream_exec*/,
     se::DeviceMemoryAllocator* /*device_allocator*/) {
-
-  if (wse_compiler_->IsEnabled()) {
-    wse_hlo_module_ = std::move(wse_compiler_->RunHloPasses(
-        xla::wse::WseCompiler::copy(*module),
-        nullptr,
-        nullptr).ValueOrDie());
-  }
-
   std::unique_ptr<llvm::TargetMachine> jit_target_machine =
       SimpleOrcJIT::InferTargetMachineForJIT(
           CompilerTargetOptions(module->config()),
@@ -615,13 +578,6 @@ StatusOr<std::unique_ptr<Executable>> CpuCompiler::RunBackend(
   XLA_SCOPED_LOGGING_TIMER(
       absl::StrFormat("Compiling [%s] for CPU using JIT", module->name()));
   auto slow_compile_alarm = SlowCompilationAlarm();
-
-  if (wse_compiler_->IsEnabled()) {
-    wse_compiler_->RunBackend(
-        std::move(wse_hlo_module_),
-        stream_exec,
-        nullptr);
-  }
 
   TF_RET_CHECK(stream_exec != nullptr);
   std::call_once(llvm_command_line_options_initialized,
