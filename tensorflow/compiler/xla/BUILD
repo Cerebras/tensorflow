@@ -17,6 +17,7 @@ package_group(
         "//tensorflow/compiler/...",
         "//tensorflow/python/tpu/...",
         "//third_party/py/jax/...",
+        "//tensorflow/tools/xla_extract/...",
     ],
 )
 

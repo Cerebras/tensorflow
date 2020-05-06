@@ -113,6 +113,7 @@ py_library(
         ":_pywrap_transform_graph",
         ":_pywrap_util_port",
         ":_pywrap_utils",
+        ":_pywrap_xla_extract",
         ":array_ops",
         ":audio_ops_gen",
         ":bitwise_ops",
@@ -656,6 +657,18 @@ tf_python_pybind_extension(
         "//third_party/eigen3",
         "//third_party/python_runtime:headers",
         "@com_google_absl//absl/strings",
+        "@pybind11",
+    ],
+)
+
+tf_python_pybind_extension(
+    name = "_pywrap_xla_extract",
+    srcs = ["util/xla_extract_wrapper.cc"],
+    module_name = "_pywrap_xla_extract",
+    deps = [
+        ":pybind11_status",
+        "//tensorflow/tools/xla_extract:tf_graph_to_xla_lib",
+        "//third_party/python_runtime:headers",
         "@pybind11",
     ],
 )

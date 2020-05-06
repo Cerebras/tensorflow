@@ -41,6 +41,9 @@ tensorflow::tfprof::Profile
 tensorflow::tfprof::PrintModelAnalysis
 tensorflow::tfprof::SerializeToString
 
+[xla_extract]
+tensorflow::ExtractXlaWithStringInputs
+
 [graph_analyzer_tool] # graph_analyzer
 tensorflow::grappler::graph_analyzer::GraphAnalyzerTool
 
