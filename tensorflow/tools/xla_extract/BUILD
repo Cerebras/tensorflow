@@ -16,7 +16,6 @@ cc_library(
     name = "wse_hlo",
     srcs = ["wse_hlo.cc"],
     hdrs = ["wse_hlo.h", "utils.h"],
-    copts = [ "-g", "-O0" ],
     deps = [
        "//tensorflow/core:framework",
        "//tensorflow/core:lib",
@@ -46,7 +45,6 @@ cc_library(
     name = "tf_graph_to_xla_lib",
     srcs = ["tf_graph_to_xla_lib.cc"],
     hdrs = ["tf_graph_to_xla_lib.h"],
-    copts = [ "-g", "-O0" ],
     deps = [
         "//tensorflow/core:framework",
         "//tensorflow/core:lib",
@@ -99,18 +97,13 @@ cc_library(
         "//tensorflow/core/kernels:conv_ops",
         "//tensorflow/core/kernels:data_flow",
         "//tensorflow/stream_executor:stream_executor_impl",
-
-        ":wse_hlo",
-
-        # Plug into libxla_computation_client
-        "//tensorflow/compiler/xla/xla_client:libxla_computation_client.so",
+        "//tensorflow/tools/xla_extract:wse_hlo",
     ],
 )
 
 tf_cc_binary(
     name = "tf_graph_to_xla",
     srcs = ["tf_graph_to_xla.cc"],
-    copts = [ "-g", "-O0" ],
     visibility = ["//visibility:public"],
     deps = [
         ":tf_graph_to_xla_lib",

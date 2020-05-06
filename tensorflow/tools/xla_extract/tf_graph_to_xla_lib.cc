@@ -1,5 +1,4 @@
 #include "tensorflow/tools/xla_extract/tf_graph_to_xla_lib.h"
-#include "tensorflow/tools/xla_extract/tf_graph_to_xla_lib.h"
 #include "tensorflow/tools/xla_extract/wse_hlo.h"
 #include "tensorflow/tools/xla_extract/utils.h"
 #include <google/protobuf/util/json_util.h>

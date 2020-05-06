@@ -1,5 +1,7 @@
 #pragma once
-
+#include <iostream>
+#include "tensorflow/core/platform/logging.h"
+#include <google/protobuf/util/json_util.h>
 #define NO_LOG 0
 #define INFO_LOG 1
 #define DEBUG_LOG 2

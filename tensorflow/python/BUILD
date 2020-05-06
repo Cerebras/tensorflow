@@ -467,11 +467,9 @@ tf_python_pybind_extension(
     name = "_pywrap_xla_extract",
     srcs = ["util/xla_extract_wrapper.cc"],
     module_name = "_pywrap_xla_extract",
-    copts = ["-ggdb3", "-O0"],
     deps = [
         ":pybind11_status",
         "//tensorflow/tools/xla_extract:tf_graph_to_xla_lib",
-        "//tensorflow/core:lib_headers_for_pybind",
         "//third_party/python_runtime:headers",
         "@pybind11",
     ],

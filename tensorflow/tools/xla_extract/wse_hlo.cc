@@ -26,8 +26,8 @@
 namespace tensorflow {
 namespace wse {
 
-const bool save_messages = true; //get_env_bool("XLA_SAVE_MESSAGES", false);
-const bool verbose = true; // get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
+const bool save_messages = get_env_bool("XLA_SAVE_MESSAGES", false);
+const bool verbose = get_env_int("XLA_LOG", NO_LOG) >= DEBUG_LOG;
 
 xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloModule>& hlo_module) {
   Status s;
@@ -115,20 +115,22 @@ xla::StatusOr<std::unique_ptr<xla::HloModule>> RunHlo(std::unique_ptr<xla::HloMo
       LOG(INFO) << "Done HLO Optimization\n";
     }
 
-    //if (save_messages) {
-      //std::string out_graph;
-      //hlo_module->ToProto().SerializeToString(&out_graph);
+    if (save_messages) {
+      std::string out_graph;
+      hlo_module->ToProto().SerializeToString(&out_graph);
 
-      //if (save_messages) {
-//        FILE *f = fopen("wse_hlo_xla.pbtxt", "wb");
-//        assert(f);
-//        fwrite(out_graph.data(), out_graph.size(), 1, f);
-//        fclose(f);
-//      std::string
-//      ::google::protobuf::util::MessageToJsonString(hlo_module->ToProto(), );
+      if (save_messages) {
+        FILE *f = fopen("wse_hlo_xla.pbtxt", "wb");
+        assert(f);
+        fwrite(out_graph.data(), out_graph.size(), 1, f);
+        fclose(f);
+        std::string json;
+        google::protobuf::util::JsonPrintOptions op;
+        op.add_whitespace = true;
+        google::protobuf::util::MessageToJsonString(hlo_module->ToProto(),&json, op);
         save_msg(hlo_module->ToProto(), "wse_hlo_xla.json");
-      //}
-    //}
+      }
+    }
 
   }
 
