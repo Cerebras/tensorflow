@@ -154,7 +154,10 @@ Status RewriteSubgraph(const std::vector<OutputTensor>& arg_source_tensors,
 
   // Sorts the retvals by name so the order is deterministic.
   std::sort(retvals.begin(), retvals.end(),
-            [](Node* a, Node* b) { return a->name() < b->name(); });
+            [](Node* a, Node* b) {
+    std::cout << "unsorted retval: " << a->name() << ", " << b->name() << std::endl << std::flush;
+    return a->name() < b->name();
+  });
 
   // Computes the permutation to produce the correct argument order, and update
   // the argument indices.

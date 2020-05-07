@@ -71,6 +71,7 @@ limitations under the License.
 #include "tensorflow/core/profiler/lib/scoped_annotation.h"
 #include "tensorflow/core/profiler/lib/traceme.h"
 #include "tensorflow/core/util/tensor_slice_reader_cache.h"
+#include "tensorflow/core/util/util.h"
 
 namespace tensorflow {
 namespace {
@@ -2617,6 +2618,8 @@ void ExecutorState::ScheduleFinish() {
 
 void ExecutorState::Finish() {
   mu_.lock();
+  //HERE();
+  //std::cout << "ExecutorState::Finish()" << std::endl << std::flush;
   auto status = status_;
   auto done_cb = std::move(done_cb_);
   auto runner = std::move(runner_);
