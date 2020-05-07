@@ -25,10 +25,19 @@ else
     BUILD_FLAGS="--cpu=arm64-v8a"
 fi
 
+# SW-21674: The path cannot be a symlink or else bazel will complain because
+# this path is added to cxx_builtin_include_directories as-is, but bazel
+# resolves the full paths to detected dependencies and does string comparisons,
+# not same-file comparisons.
+if [ "$SDK_PATH" != $(realpath "$SDK_PATH") ] ; then
+    echo "$SDK_PATH -> $(realpath "$SDK_PATH") cannot be a symlink! See SW-21674."
+    exit 1
+fi
+
 # Configure the build.
 PATH=$SDK_PATH/usr/bin:$PATH \
 PYTHON_BIN_PATH=$SDK_PATH/usr/bin/python3 \
-PYTHON_LIB_PATH=$SDK_PATH/usr/lib/python3.7/site-packages \
+PYTHON_LIB_PATH=$($SDK_PATH/usr/bin/python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])") \
 TF_ENABLE_XLA=1 \
 TF_NEED_OPENCL_SYCL=0 \
 TF_NEED_ROCM=0 \
