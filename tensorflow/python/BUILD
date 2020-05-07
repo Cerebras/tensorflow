@@ -668,6 +668,7 @@ tf_python_pybind_extension(
     deps = [
         ":pybind11_status",
         "//tensorflow/tools/xla_extract:tf_graph_to_xla_lib",
+        "//tensorflow/core:lib_headers_for_pybind",
         "//third_party/python_runtime:headers",
         "@pybind11",
     ],

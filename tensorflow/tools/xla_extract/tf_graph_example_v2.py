@@ -17,11 +17,9 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.compiler.xla import xla
 
 from tensorflow.core.framework import graph_pb2
-from tensorflow.compiler.jit.ops import xla_ops       # pylint: disable=unused-import
-from tensorflow.compiler.jit.ops import xla_ops_grad  # pylint: disable=unused-import
-
+print("appel")
 from tensorflow.tools.xla_extract import XlaExtract
-
+print("banana")
 # from tensorflow.python._pywrap_tensorflow_internal import (
 #     ExtractXlaWithStringInputs
 # )
